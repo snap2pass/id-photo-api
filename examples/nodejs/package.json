@@ -1,0 +1,37 @@
+{
+  "name": "snap2pass-nodejs-examples",
+  "version": "1.0.0",
+  "description": "Node.js examples for integrating with Snap2Pass API",
+  "main": "photo-processor.js",
+  "scripts": {
+    "start": "node photo-processor.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
+  },
+  "keywords": [
+    "snap2pass",
+    "api",
+    "nodejs",
+    "passport",
+    "visa",
+    "photo",
+    "processing"
+  ],
+  "author": "Snap2Pass Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/snap2pass/api-examples"
+  },
+  "homepage": "https://snap2pass.com",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+} 

@@ -1,0 +1,49 @@
+{
+  "name": "snap2pass-react-examples",
+  "version": "1.0.0",
+  "description": "React examples for integrating with Snap2Pass API",
+  "main": "index.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "keywords": [
+    "snap2pass",
+    "api",
+    "react",
+    "passport",
+    "visa",
+    "photo",
+    "processing"
+  ],
+  "author": "Snap2Pass Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/snap2pass/api-examples"
+  },
+  "homepage": "https://snap2pass.com"
+} 
