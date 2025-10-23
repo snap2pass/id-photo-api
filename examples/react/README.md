@@ -362,8 +362,8 @@ The component uses modern CSS with:
 ## Support
 
 - **Email:** [support@snap2pass.com](mailto:support@snap2pass.com)
-- **Documentation:** [docs.snap2pass.com](https://docs.snap2pass.com)
-- **Status Page:** [status.snap2pass.com](https://status.snap2pass.com)
+- **GitHub:** [github.com/snap2pass/id-photo-api](https://github.com/snap2pass/id-photo-api)
+- **24/7 AI Support:** [snap2pass.com/support](https://snap2pass.com/support)
 
 ## License
 

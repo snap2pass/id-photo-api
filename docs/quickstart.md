@@ -473,8 +473,7 @@ Now that you've processed your first photo, explore more:
 
 - **Email Support**: [support@snap2pass.com](mailto:support@snap2pass.com)
 - **24/7 AI Support**: Available at [snap2pass.com/support](https://snap2pass.com/support)
-- **Status Page**: [status.snap2pass.com](https://status.snap2pass.com)
-- **Documentation**: [docs.snap2pass.com](https://docs.snap2pass.com)
+- **GitHub**: [github.com/snap2pass/id-photo-api](https://github.com/snap2pass/id-photo-api)
 
 ## 🎉 Congratulations!
 

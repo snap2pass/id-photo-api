@@ -392,8 +392,7 @@ We offer multiple levels of support to ensure you get the help you need.
 - **24/7 AI Support**: Available round-the-clock at [snap2pass.com/support](https://snap2pass.com/support)
 - **Human Support**: Business hours (Monday-Friday, 9am-5pm EST)
 - **Email Support**: [support@snap2pass.com](mailto:support@snap2pass.com)
-- **Documentation**: Comprehensive guides at [docs.snap2pass.com](https://docs.snap2pass.com)
-- **Status Page**: Real-time service status at [status.snap2pass.com](https://status.snap2pass.com)
+- **GitHub**: [github.com/snap2pass/id-photo-api](https://github.com/snap2pass/id-photo-api)
 
 ### Service Level Agreement (SLA)
 

@@ -600,10 +600,9 @@ def validate_image(base64_image):
 
 ## 📞 Support
 
-- **Documentation:** [docs.snap2pass.com](https://docs.snap2pass.com)
-- **Status Page:** [status.snap2pass.com](https://status.snap2pass.com)
 - **Email Support:** support@snap2pass.com
 - **Business Hours:** Monday-Friday, 9am-5pm EST
+- **GitHub:** [github.com/snap2pass/id-photo-api](https://github.com/snap2pass/id-photo-api)
 
 ## 📝 Changelog
 

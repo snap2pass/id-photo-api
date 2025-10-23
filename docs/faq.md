@@ -322,8 +322,7 @@ We offer multiple support channels:
 - **24/7 AI Support**: Available at [snap2pass.com/support](https://snap2pass.com/support)
 - **Human Support Team**: Business hours (Monday-Friday, 9am-5pm EST)
 - **Email Support**: [support@snap2pass.com](mailto:support@snap2pass.com)
-- **Documentation**: Comprehensive guides at [docs.snap2pass.com](https://docs.snap2pass.com)
-- **Status Page**: Real-time service status at [status.snap2pass.com](https://status.snap2pass.com)
+- **GitHub**: [github.com/snap2pass/id-photo-api](https://github.com/snap2pass/id-photo-api)
 
 ### What is your SLA?
 
@@ -346,7 +345,7 @@ Contact our support team at [support@snap2pass.com](mailto:support@snap2pass.com
 
 ### Where can I check service status?
 
-Visit [status.snap2pass.com](https://status.snap2pass.com) for real-time service status, uptime statistics, and incident reports.
+Check our GitHub repository at [github.com/snap2pass/id-photo-api](https://github.com/snap2pass/id-photo-api) for updates, or contact support@snap2pass.com for service status inquiries.
 
 ## Integration Questions
 
