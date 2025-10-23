@@ -1,16 +1,16 @@
 # Snap2Pass API - React Examples
 
-This directory contains React examples for integrating with the Snap2Pass API.
+This directory contains React examples for integrating with the Snap2Pass API using the new JSON-based API.
 
 ## Features
 
-- 📸 **File Upload** - Drag and drop or click to upload photos
-- 🛂 **Country-Specific Processing** - Support for 200+ countries
-- ⚙️ **Custom Specifications** - Fine-tune photo requirements
-- ✅ **Real-time Validation** - Instant feedback on photo compliance
-- 💾 **Download Results** - Save processed photos directly
+- 📸 **File Upload** - Click to upload photos with instant preview
+- 🛂 **Document Type Selection** - Support for 9 document types
+- ✅ **Real-time Validation** - Instant feedback with scoring system
+- 💾 **Download Results** - Save processed photos from CloudFront URLs
 - 📱 **Responsive Design** - Works on desktop and mobile
 - 🎨 **Modern UI** - Beautiful, professional interface
+- 🔐 **Secure** - API key handled via environment variables
 
 ## Setup
 
@@ -21,11 +21,14 @@ This directory contains React examples for integrating with the Snap2Pass API.
    yarn install
    ```
 
-2. **Get your API token:**
-   Contact [sales@snap2pass.com](mailto:sales@snap2pass.com) to get your API credentials.
+2. **Get your API key:**
+   Sign up at [snap2pass.com/business](https://snap2pass.com/business) to get your API key automatically.
 
-3. **Update the API token:**
-   Replace `YOUR_API_TOKEN_HERE` in `PhotoProcessor.jsx` with your actual API token.
+3. **Set your API key:**
+   Create a `.env` file in your project root:
+   ```
+   REACT_APP_SNAP2PASS_API_KEY=snap2pass_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
 
 4. **Start the development server:**
    ```bash
@@ -44,10 +47,11 @@ This directory contains React examples for integrating with the Snap2Pass API.
 A comprehensive React component that demonstrates:
 
 - **File Upload & Preview** - Upload photos with instant preview
-- **Processing Modes** - Choose between country-specific or custom specifications
-- **Real-time Validation** - Get immediate feedback on photo compliance
-- **Error Handling** - Graceful handling of API errors and validation issues
-- **Download Functionality** - Save processed photos with one click
+- **Document Selection** - Choose from 9 supported document types
+- **Validation Scoring** - Get a quality score (0-100)
+- **Error Handling** - Graceful handling of API errors
+- **CloudFront Integration** - Download images from CDN URLs
+- **30-Day Storage** - Images available for 30 days
 
 ### Usage
 
@@ -63,7 +67,7 @@ function App() {
 }
 ```
 
-### Integration Example
+### Simple Integration Example
 
 ```jsx
 import React, { useState } from 'react';
@@ -73,26 +77,47 @@ function SimplePhotoUploader() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processPhoto = async () => {
     if (!file) return;
     
     setLoading(true);
-    const formData = new FormData();
-    formData.append('input_photo', file);
-    formData.append('country_code', 'US');
-    formData.append('document_type', 'passport');
-
     try {
-      const response = await fetch('https://api.snap2pass.com/create-photo', {
+      // Convert image to base64
+      const base64Image = await fileToBase64(file);
+
+      // Make API request
+      const response = await fetch('https://api.snap2pass.com/process-photo', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer YOUR_API_TOKEN'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.REACT_APP_SNAP2PASS_API_KEY}`
         },
-        body: formData
+        body: JSON.stringify({
+          photo: base64Image,
+          document_id: 'us-passport'
+        })
       });
       
       const data = await response.json();
-      setResult(data);
+      
+      if (response.status === 200) {
+        setResult(data);
+      } else {
+        console.error('Error:', data.error);
+      }
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -107,10 +132,12 @@ function SimplePhotoUploader() {
         {loading ? 'Processing...' : 'Process Photo'}
       </button>
       {result && (
-        <img 
-          src={`data:image/jpeg;base64,${result.document_image_base64}`} 
-          alt="Processed photo" 
-        />
+        <div>
+          <p>Validation Score: {result.validation.score}/100</p>
+          <p>Summary: {result.validation.summary}</p>
+          <img src={result.image_urls.output} alt="Processed photo" />
+          <a href={result.image_urls.output} download>Download Photo</a>
+        </div>
       )}
     </div>
   );
@@ -129,65 +156,185 @@ examples/react/
 
 ## API Configuration
 
-The component uses the following API configuration:
+The component uses the new JSON-based API:
 
 - **Base URL:** `https://api.snap2pass.com`
-- **Endpoint:** `/create-photo`
+- **Endpoint:** `/process-photo`
 - **Method:** `POST`
-- **Content-Type:** `multipart/form-data`
-- **Authentication:** Bearer token
+- **Content-Type:** `application/json`
+- **Authentication:** Bearer token (API key)
+- **Image Format:** Base64-encoded in JSON body
+- **Response:** JSON with CloudFront URLs
 
-## Supported Features
+## Supported Document Types
 
-### Country-Specific Processing
-- United States (US)
-- Canada (CA)
-- United Kingdom (GB)
-- Australia (AU)
-- Germany (DE)
-- France (FR)
-- Japan (JP)
-- India (IN)
-- And 200+ more countries
+| Document ID | Description |
+|-------------|-------------|
+| `us-passport` | US Passport |
+| `us-visa` | US Visa |
+| `ca-passport` | Canadian Passport |
+| `uk-passport` | UK Passport |
+| `eu-passport` | EU Passport |
+| `in-passport` | Indian Passport |
+| `jp-passport` | Japanese Passport |
+| `cn-passport` | Chinese Passport |
+| `au-passport` | Australian Passport |
 
-### Document Types
-- Passport photos
-- Visa photos
+## Response Format
 
-### Custom Specifications
-- Width and height
-- Units (imperial/metric)
-- Head to height ratio
-- Eye distance from top
-- Background color
-- DPI resolution
+### Success Response (200 OK)
+
+```json
+{
+  "success": true,
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "image_urls": {
+    "input": "https://images.snap2pass.com/customer-id/request-id-input.jpg",
+    "output": "https://images.snap2pass.com/customer-id/request-id-output.jpg"
+  },
+  "validation": {
+    "passed": true,
+    "score": 95,
+    "warnings": [],
+    "errors": [],
+    "summary": "Photo meets all passport requirements"
+  }
+}
+```
+
+### Validation Response Fields
+
+- **`passed`**: Boolean indicating if photo meets requirements
+- **`score`**: Quality score from 0-100
+  - 90-100: Excellent quality
+  - 75-89: Good quality (acceptable)
+  - 60-74: Fair quality (may have minor issues)
+  - Below 60: Poor quality (likely to be rejected)
+- **`warnings`**: Non-critical issues (photo still usable)
+- **`errors`**: Critical issues (photo may be rejected)
+- **`summary`**: Human-readable assessment
 
 ## Error Handling
 
 The component handles various error scenarios:
 
-- **File Validation** - Checks file type and size
-- **Network Errors** - Handles connection issues
-- **API Errors** - Displays server error messages
-- **Validation Errors** - Shows photo compliance issues
+### Authentication Errors (401, 402)
 
-## Validation Errors
+```json
+{
+  "error": {
+    "code": "INVALID_API_KEY",
+    "message": "Invalid or expired API key"
+  }
+}
+```
 
-Common validation errors include:
+```json
+{
+  "error": {
+    "code": "INSUFFICIENT_CREDITS",
+    "message": "Insufficient credits. Please purchase more credits at https://www.snap2pass.com/business/purchase",
+    "details": {
+      "current_credits": 0
+    }
+  }
+}
+```
 
-- `face_not_straight` - Face not properly aligned
-- `blurred_photo` - Image is too blurry
-- `too_dark_photo` - Insufficient lighting
-- `eyeglasses_detected` - Glasses not allowed
-- `hat_detected` - Hat not allowed
-- `sunglasses_detected` - Sunglasses not allowed
-- `mouth_open` - Mouth should be closed
-- `eyes_not_open` - Eyes should be open
-- `no_clothing` - Person should be wearing clothes
-- `not_light_color_background` - Background should be light
-- `left_ear_not_visible` - Left ear should be visible
-- `right_ear_not_visible` - Right ear should be visible
-- `camera_too_close` - Camera too close to subject
+### Validation Errors (400)
+
+```json
+{
+  "error": {
+    "code": "IMAGE_TOO_LARGE",
+    "message": "Image size exceeds 5MB limit",
+    "details": {
+      "size_mb": 6.2,
+      "max_size_mb": 5
+    }
+  }
+}
+```
+
+### Server Errors (500)
+
+```json
+{
+  "error": {
+    "code": "PROCESSING_FAILED",
+    "message": "Failed to process image due to internal error",
+    "details": {
+      "request_id": "550e8400-e29b-41d4-a716-446655440000"
+    }
+  }
+}
+```
+
+## Image Requirements
+
+### Input Requirements
+
+- **Format:** JPEG or PNG
+- **Size:** Maximum 5MB (base64-encoded)
+- **Minimum Resolution:** 600×600 pixels
+- **Recommended Resolution:** 1200×1200 pixels or higher
+- **Face Coverage:** 50-70% of frame height
+- **Background:** Any (automatically removed)
+- **Lighting:** Even, natural lighting preferred
+- **Expression:** Neutral, mouth closed
+- **Eyes:** Open and clearly visible
+
+### Output Guarantees
+
+- **Format:** JPEG (high quality)
+- **DPI:** 300 (print quality)
+- **Background:** Pure white
+- **Delivery:** CloudFront CDN URLs
+- **Storage:** 30 days automatic deletion
+
+## CloudFront Integration
+
+Images are delivered via CloudFront CDN:
+
+- **Domain:** `images.snap2pass.com`
+- **No Authentication Required** for downloads
+- **30-Day Storage:** Images automatically deleted after 30 days
+- **Download:** Use standard `fetch()` or `<a download>` tags
+
+### Download Example
+
+```jsx
+const downloadPhoto = async (url, filename) => {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+};
+
+// Usage
+downloadPhoto(result.image_urls.output, 'passport_photo.jpg');
+```
+
+## Security Best Practices
+
+1. **Environment Variables:** Always use environment variables for API keys
+   ```
+   REACT_APP_SNAP2PASS_API_KEY=snap2pass_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+
+2. **Backend Proxy:** For production, implement a backend proxy to keep API keys secure:
+   ```
+   Frontend → Your Backend → Snap2Pass API
+   ```
+
+3. **Never Commit Keys:** Add `.env` to `.gitignore`
+
+4. **Client-Side Validation:** Validate images before API calls to reduce costs
 
 ## Styling
 
@@ -196,7 +343,8 @@ The component uses modern CSS with:
 - **Gradient backgrounds** - Professional appearance
 - **Responsive design** - Mobile-friendly layout
 - **Smooth animations** - Enhanced user experience
-- **Accessibility** - Keyboard navigation and screen reader support
+- **Accessibility** - Keyboard navigation support
+- **Score-based colors** - Visual feedback on quality
 
 ## Browser Support
 
@@ -205,10 +353,18 @@ The component uses modern CSS with:
 - Safari 14+
 - Edge 90+
 
+## Credit System
+
+- **Cost:** 1 credit per successful photo processing (HTTP 200)
+- **Failed Requests:** No credits deducted for errors (4xx or 5xx)
+- **Balance:** Check at [snap2pass.com/business/dashboard](https://snap2pass.com/business/dashboard)
+
 ## Support
 
-For questions about the React examples, contact [api-support@snap2pass.com](mailto:api-support@snap2pass.com).
+- **Email:** [support@snap2pass.com](mailto:support@snap2pass.com)
+- **Documentation:** [docs.snap2pass.com](https://docs.snap2pass.com)
+- **Status Page:** [status.snap2pass.com](https://status.snap2pass.com)
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.

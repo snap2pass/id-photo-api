@@ -4,51 +4,45 @@
  * Snap2Pass API - Node.js Photo Processor
  * 
  * This example demonstrates how to use the Snap2Pass API to process
- * passport and visa photos using Node.js with modern JavaScript features.
+ * passport and visa photos using Node.js with the new JSON-based API.
  */
 
 const fs = require('fs');
 const path = require('path');
-const FormData = require('form-data');
 const axios = require('axios');
 
 class Snap2PassAPI {
   /**
    * Initialize the Snap2Pass API client
-   * @param {string} apiToken - Your Snap2Pass API token
+   * @param {string} apiKey - Your Snap2Pass API key
    */
-  constructor(apiToken) {
-    this.apiToken = apiToken;
+  constructor(apiKey) {
+    this.apiKey = apiKey;
     this.baseURL = 'https://api.snap2pass.com';
     this.headers = {
-      'Authorization': `Bearer ${apiToken}`
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
     };
   }
 
   /**
-   * Process a photo using country-specific document requirements
+   * Process a photo using the Snap2Pass API
    * @param {string} photoPath - Path to the input photo file
-   * @param {string} countryCode - Country code (e.g., 'US', 'CA', 'GB')
-   * @param {string} documentType - Type of document ('passport' or 'visa')
-   * @param {string} requestId - Optional request ID for tracking trials
+   * @param {string} documentId - Document type identifier (e.g., 'us-passport', 'uk-passport')
    * @returns {Promise<Object>} API response
    */
-  async createPhotoWithCountrySpecs(photoPath, countryCode, documentType, requestId = null) {
+  async processPhoto(photoPath, documentId) {
     try {
-      const formData = new FormData();
-      formData.append('input_photo', fs.createReadStream(photoPath));
-      formData.append('country_code', countryCode);
-      formData.append('document_type', documentType);
+      // Read and encode image to base64
+      const imageBuffer = fs.readFileSync(photoPath);
+      const base64Image = imageBuffer.toString('base64');
 
-      if (requestId) {
-        formData.append('request_id', requestId);
-      }
-
-      const response = await axios.post(`${this.baseURL}/create-photo`, formData, {
-        headers: {
-          ...this.headers,
-          ...formData.getHeaders()
-        }
+      // Make the API call
+      const response = await axios.post(`${this.baseURL}/process-photo`, {
+        photo: base64Image,
+        document_id: documentId
+      }, {
+        headers: this.headers
       });
 
       return this.handleResponse(response);
@@ -58,60 +52,18 @@ class Snap2PassAPI {
   }
 
   /**
-   * Process a photo using custom specifications
-   * @param {string} photoPath - Path to the input photo file
-   * @param {Object} specs - Custom specifications
-   * @param {number} specs.width - Photo width in specified units
-   * @param {number} specs.height - Photo height in specified units
-   * @param {string} specs.units - Units for dimensions ('imperial' or 'metric')
-   * @param {number} specs.headToHeightRatio - Ratio of head size to total height
-   * @param {number} specs.eyeDistanceFromTop - Distance of eyes from top
-   * @param {string} specs.backgroundColor - Background color in hex format
-   * @param {number} specs.dpi - Resolution in dots per inch
-   * @param {string} requestId - Optional request ID for tracking trials
-   * @returns {Promise<Object>} API response
+   * Download an image from a CloudFront URL
+   * @param {string} imageUrl - CloudFront URL of the image
+   * @param {string} outputPath - Path where to save the downloaded image
+   * @returns {Promise<void>}
    */
-  async createPhotoWithCustomSpecs(photoPath, specs, requestId = null) {
+  async downloadImage(imageUrl, outputPath) {
     try {
-      const formData = new FormData();
-      formData.append('input_photo', fs.createReadStream(photoPath));
-      formData.append('width', specs.width);
-      formData.append('height', specs.height);
-      formData.append('units', specs.units);
-      formData.append('head_to_height_ratio', specs.headToHeightRatio);
-      formData.append('eye_distance_from_top', specs.eyeDistanceFromTop);
-      formData.append('background_color', specs.backgroundColor);
-      formData.append('dpi', specs.dpi);
-
-      if (requestId) {
-        formData.append('request_id', requestId);
-      }
-
-      const response = await axios.post(`${this.baseURL}/create-photo`, formData, {
-        headers: {
-          ...this.headers,
-          ...formData.getHeaders()
-        }
-      });
-
-      return this.handleResponse(response);
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      fs.writeFileSync(outputPath, response.data);
+      console.log(`✅ Image downloaded to: ${outputPath}`);
     } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  /**
-   * Save the processed photo from the API response
-   * @param {Object} response - API response containing the processed image
-   * @param {string} outputPath - Path where to save the processed photo
-   */
-  saveProcessedPhoto(response, outputPath) {
-    if (response.document_image_base64) {
-      const imageBuffer = Buffer.from(response.document_image_base64, 'base64');
-      fs.writeFileSync(outputPath, imageBuffer);
-      console.log(`✅ Processed photo saved to: ${outputPath}`);
-    } else {
-      console.log('❌ No processed image found in response');
+      throw new Error(`Failed to download image: ${error.message}`);
     }
   }
 
@@ -121,10 +73,10 @@ class Snap2PassAPI {
    * @returns {Object} Parsed response data
    */
   handleResponse(response) {
-    if (response.status === 201) {
+    if (response.status === 200) {
       return response.data;
     } else {
-      throw new Error(`API Error (${response.status}): ${response.data?.message || 'Unknown error'}`);
+      throw new Error(`API Error (${response.status}): ${response.data?.error?.message || 'Unknown error'}`);
     }
   }
 
@@ -136,7 +88,20 @@ class Snap2PassAPI {
   handleError(error) {
     if (error.response) {
       const { status, data } = error.response;
-      return new Error(`API Error (${status}): ${data?.message || 'Unknown error'}`);
+      const errorData = data?.error || {};
+      const code = errorData.code || 'UNKNOWN';
+      const message = errorData.message || 'Unknown error';
+      
+      if (status === 401) {
+        return new Error(`Authentication Error: ${message}`);
+      } else if (status === 402) {
+        const credits = errorData.details?.current_credits || 0;
+        return new Error(`Insufficient Credits: ${message} (Credits: ${credits})`);
+      } else if (status === 400) {
+        return new Error(`Validation Error [${code}]: ${message}`);
+      } else {
+        return new Error(`API Error (${status}): ${message}`);
+      }
     } else if (error.request) {
       return new Error('Network error. Please check your connection and try again.');
     } else {
@@ -155,10 +120,10 @@ class Snap2PassAPI {
     }
 
     const stats = fs.statSync(filePath);
-    const maxSize = 9 * 1024 * 1024; // 9MB
+    const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (stats.size > maxSize) {
-      throw new Error(`File size exceeds 9MB limit: ${(stats.size / 1024 / 1024).toFixed(2)}MB`);
+      throw new Error(`File size exceeds 5MB limit: ${(stats.size / 1024 / 1024).toFixed(2)}MB`);
     }
 
     const ext = path.extname(filePath).toLowerCase();
@@ -173,98 +138,203 @@ class Snap2PassAPI {
 }
 
 /**
+ * Process photo with retry logic for transient errors
+ * @param {Snap2PassAPI} api - Snap2PassAPI instance
+ * @param {string} photoPath - Path to photo file
+ * @param {string} documentId - Document type identifier
+ * @param {number} maxRetries - Maximum number of retry attempts
+ * @returns {Promise<Object>} API response data
+ */
+async function processWithRetry(api, photoPath, documentId, maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await api.processPhoto(photoPath, documentId);
+    } catch (error) {
+      const errorMsg = error.message;
+      
+      // Don't retry client errors
+      if (errorMsg.includes('Authentication Error') || 
+          errorMsg.includes('Validation Error') || 
+          errorMsg.includes('Insufficient Credits')) {
+        throw error;
+      }
+      
+      // Retry server errors
+      if (attempt < maxRetries - 1) {
+        const waitTime = Math.pow(2, attempt);
+        console.log(`⚠️ Error: ${errorMsg}`);
+        console.log(`🔄 Retrying in ${waitTime} seconds... (Attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+        continue;
+      }
+      throw error;
+    }
+  }
+  
+  throw new Error('Max retries exceeded');
+}
+
+/**
  * Main example function
  */
 async function main() {
-  // Replace with your actual API token
-  const API_TOKEN = 'your_api_token_here';
+  // Get API key from environment variable or use placeholder
+  const API_KEY = process.env.SNAP2PASS_API_KEY || 'your_api_key_here';
+  
+  if (API_KEY === 'your_api_key_here') {
+    console.log('❌ Please set your API key in the SNAP2PASS_API_KEY environment variable');
+    console.log('   or update the API_KEY variable in the script');
+    return;
+  }
   
   // Initialize the API client
-  const api = new Snap2PassAPI(API_TOKEN);
+  const api = new Snap2PassAPI(API_KEY);
 
   try {
     // Example 1: Process US passport photo
-    console.log('🛂 Processing US passport photo...');
+    console.log('='.repeat(70));
+    console.log('🛂 Example 1: Processing US passport photo');
+    console.log('='.repeat(70));
     
     const photoPath = 'sample_photo.jpg';
+    
+    if (!fs.existsSync(photoPath)) {
+      console.log(`⚠️ Sample photo not found: ${photoPath}`);
+      console.log('   Please provide a valid photo file to test the API');
+      return;
+    }
+    
     api.validateFile(photoPath);
     
-    const response1 = await api.createPhotoWithCountrySpecs(
-      photoPath,
-      'US',
-      'passport'
-    );
+    const response1 = await api.processPhoto(photoPath, 'us-passport');
 
-    console.log(`✅ Success! Request ID: ${response1.request_id}`);
-    console.log(`📊 Trial number: ${response1.trial_number}`);
-    console.log(`📝 Message: ${response1.message}`);
+    console.log('✅ Success!');
+    console.log(`📝 Request ID: ${response1.request_id}`);
+    console.log(`📊 Validation Score: ${response1.validation.score}/100`);
+    console.log(`✓  Validation Passed: ${response1.validation.passed}`);
+    console.log(`💬 Summary: ${response1.validation.summary}`);
+
+    // Check for validation warnings
+    if (response1.validation.warnings && response1.validation.warnings.length > 0) {
+      console.log('⚠️  Validation Warnings:');
+      response1.validation.warnings.forEach(warning => {
+        console.log(`   - ${warning}`);
+      });
+    }
 
     // Check for validation errors
-    if (response1.validation_errors && response1.validation_errors.length > 0) {
-      console.log('⚠️ Validation errors found:');
-      response1.validation_errors.forEach(error => {
+    if (response1.validation.errors && response1.validation.errors.length > 0) {
+      console.log('❌ Validation Errors:');
+      response1.validation.errors.forEach(error => {
         console.log(`   - ${error}`);
       });
     } else {
       console.log('✅ No validation errors!');
     }
 
-    // Save the processed photo
-    api.saveProcessedPhoto(response1, 'us_passport_photo.jpg');
+    // Download the processed photo
+    console.log('\n📥 Downloading processed photo...');
+    await api.downloadImage(response1.image_urls.output, 'us_passport_photo.jpg');
 
-    console.log('\n' + '='.repeat(50) + '\n');
+    console.log('\n🔗 CloudFront URLs:');
+    console.log(`   Input:  ${response1.image_urls.input}`);
+    console.log(`   Output: ${response1.image_urls.output}`);
+    console.log('\n⏰ Images will be available for 30 days');
 
-    // Example 2: Process visa photo with custom specifications
-    console.log('🎫 Processing visa photo with custom specs...');
+    console.log('\n' + '='.repeat(70) + '\n');
+
+    // Example 2: Process UK passport photo
+    console.log('='.repeat(70));
+    console.log('🇬🇧 Example 2: Processing UK passport photo');
+    console.log('='.repeat(70));
     
-    const customSpecs = {
-      width: 2.0,
-      height: 2.0,
-      units: 'imperial',
-      headToHeightRatio: 0.75,
-      eyeDistanceFromTop: 0.5,
-      backgroundColor: '#FFFFFF',
-      dpi: 300
-    };
+    const response2 = await api.processPhoto(photoPath, 'uk-passport');
 
-    const response2 = await api.createPhotoWithCustomSpecs(photoPath, customSpecs);
+    console.log('✅ Success!');
+    console.log(`📝 Request ID: ${response2.request_id}`);
+    console.log(`📊 Validation Score: ${response2.validation.score}/100`);
 
-    console.log(`✅ Success! Request ID: ${response2.request_id}`);
-    console.log(`📊 Trial number: ${response2.trial_number}`);
+    // Download the processed photo
+    await api.downloadImage(response2.image_urls.output, 'uk_passport_photo.jpg');
 
-    // Save the processed photo
-    api.saveProcessedPhoto(response2, 'custom_visa_photo.jpg');
+    console.log('\n' + '='.repeat(70) + '\n');
 
-    console.log('\n' + '='.repeat(50) + '\n');
+    // Example 3: Using retry logic
+    console.log('='.repeat(70));
+    console.log('🔄 Example 3: Processing with retry logic');
+    console.log('='.repeat(70));
+    
+    const response3 = await processWithRetry(api, photoPath, 'ca-passport', 3);
 
-    // Example 3: Multiple trials with the same request ID
-    console.log('🔄 Processing multiple trials...');
-    let requestId = null;
+    console.log('✅ Success with retries!');
+    console.log(`📊 Validation Score: ${response3.validation.score}/100`);
+    await api.downloadImage(response3.image_urls.output, 'ca_passport_photo.jpg');
 
-    for (let trial = 1; trial <= 3; trial++) {
+    console.log('\n' + '='.repeat(70) + '\n');
+
+    // Example 4: Batch processing multiple photos
+    console.log('='.repeat(70));
+    console.log('📸 Example 4: Batch processing multiple photos');
+    console.log('='.repeat(70));
+
+    const photos = [
+      { path: 'photo1.jpg', documentId: 'us-passport' },
+      { path: 'photo2.jpg', documentId: 'uk-passport' },
+      { path: 'photo3.jpg', documentId: 'eu-passport' },
+    ];
+
+    const results = [];
+    for (let i = 0; i < photos.length; i++) {
+      const { path: photoPath, documentId } = photos[i];
+      
+      if (!fs.existsSync(photoPath)) {
+        console.log(`⚠️  Skipping ${photoPath} (file not found)`);
+        continue;
+      }
+
       try {
-        const response = await api.createPhotoWithCountrySpecs(
-          photoPath,
-          'CA',
-          'passport',
-          requestId
-        );
+        console.log(`\n[${i + 1}/${photos.length}] Processing ${photoPath} (${documentId})...`);
+        const response = await api.processPhoto(photoPath, documentId);
 
-        requestId = response.request_id;
-        console.log(`Trial ${response.trial_number}: ${response.message}`);
+        console.log(`   ✅ Score: ${response.validation.score}/100`);
 
-        if (!response.validation_errors || response.validation_errors.length === 0) {
-          console.log('✅ Photo meets requirements!');
-          api.saveProcessedPhoto(response, `canada_passport_trial_${trial}.jpg`);
-          break;
-        } else {
-          console.log(`⚠️ Validation errors: ${response.validation_errors.join(', ')}`);
-        }
+        // Download processed photo
+        const outputFilename = `processed_${i + 1}_${documentId}.jpg`;
+        await api.downloadImage(response.image_urls.output, outputFilename);
+
+        results.push({
+          input: photoPath,
+          documentId: documentId,
+          success: true,
+          score: response.validation.score,
+          output: outputFilename
+        });
+
       } catch (error) {
-        console.log(`❌ Error in trial ${trial}: ${error.message}`);
-        break;
+        console.log(`   ❌ Error: ${error.message}`);
+        results.push({
+          input: photoPath,
+          documentId: documentId,
+          success: false,
+          error: error.message
+        });
       }
     }
+
+    // Print summary
+    console.log('\n' + '='.repeat(70));
+    console.log('📊 Batch Processing Summary');
+    console.log('='.repeat(70));
+    const successful = results.filter(r => r.success).length;
+    console.log(`Total: ${results.length} | Success: ${successful} | Failed: ${results.length - successful}`);
+
+    results.forEach((result, i) => {
+      if (result.success) {
+        console.log(`  ${i + 1}. ✅ ${result.input} → Score: ${result.score}/100`);
+      } else {
+        console.log(`  ${i + 1}. ❌ ${result.input} → ${result.error || 'Unknown error'}`);
+      }
+    });
 
   } catch (error) {
     console.error('❌ Error:', error.message);
@@ -276,25 +346,21 @@ async function main() {
  * Example of using the API with async/await and error handling
  */
 async function processPhotoExample() {
-  const api = new Snap2PassAPI('your_api_token_here');
+  const api = new Snap2PassAPI(process.env.SNAP2PASS_API_KEY || 'your_api_key_here');
 
   try {
     // Process a photo with comprehensive error handling
-    const result = await api.createPhotoWithCountrySpecs(
-      'photo.jpg',
-      'US',
-      'passport'
-    );
+    const result = await api.processPhoto('photo.jpg', 'us-passport');
 
     // Handle the result
-    if (result.validation_errors && result.validation_errors.length > 0) {
+    if (result.validation.errors && result.validation.errors.length > 0) {
       console.log('Photo has validation issues:');
-      result.validation_errors.forEach(error => {
+      result.validation.errors.forEach(error => {
         console.log(`- ${error}`);
       });
     } else {
       console.log('Photo processed successfully!');
-      api.saveProcessedPhoto(result, 'processed_photo.jpg');
+      await api.downloadImage(result.image_urls.output, 'processed_photo.jpg');
     }
 
   } catch (error) {
@@ -305,19 +371,19 @@ async function processPhotoExample() {
 /**
  * Example of batch processing multiple photos
  */
-async function batchProcessPhotos(photoPaths, countryCode = 'US', documentType = 'passport') {
-  const api = new Snap2PassAPI('your_api_token_here');
+async function batchProcessPhotos(photoPaths, documentId = 'us-passport') {
+  const api = new Snap2PassAPI(process.env.SNAP2PASS_API_KEY || 'your_api_key_here');
   const results = [];
 
   for (const photoPath of photoPaths) {
     try {
       console.log(`Processing ${photoPath}...`);
-      const result = await api.createPhotoWithCountrySpecs(photoPath, countryCode, documentType);
+      const result = await api.processPhoto(photoPath, documentId);
       results.push({ photoPath, success: true, result });
       
       // Save with unique filename
       const filename = path.basename(photoPath, path.extname(photoPath));
-      api.saveProcessedPhoto(result, `processed_${filename}.jpg`);
+      await api.downloadImage(result.image_urls.output, `processed_${filename}.jpg`);
       
     } catch (error) {
       console.error(`Failed to process ${photoPath}:`, error.message);
@@ -332,10 +398,11 @@ async function batchProcessPhotos(photoPaths, countryCode = 'US', documentType =
 module.exports = {
   Snap2PassAPI,
   processPhotoExample,
-  batchProcessPhotos
+  batchProcessPhotos,
+  processWithRetry
 };
 
 // Run the main example if this file is executed directly
 if (require.main === module) {
   main().catch(console.error);
-} 
+}

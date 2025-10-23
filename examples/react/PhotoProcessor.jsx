@@ -5,7 +5,7 @@ import './PhotoProcessor.css';
  * Snap2Pass Photo Processor Component
  * 
  * This component demonstrates how to integrate with the Snap2Pass API
- * to process passport and visa photos in a React application.
+ * to process passport and visa photos in a React application using the new JSON-based API.
  */
 const PhotoProcessor = () => {
   // State management
@@ -14,26 +14,40 @@ const PhotoProcessor = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [processingMode, setProcessingMode] = useState('country'); // 'country' or 'custom'
-  
-  // Country-specific settings
-  const [countryCode, setCountryCode] = useState('US');
-  const [documentType, setDocumentType] = useState('passport');
-  
-  // Custom specifications
-  const [customSpecs, setCustomSpecs] = useState({
-    width: 2.0,
-    height: 2.0,
-    units: 'imperial',
-    headToHeightRatio: 0.75,
-    eyeDistanceFromTop: 0.5,
-    backgroundColor: '#FFFFFF',
-    dpi: 300
-  });
+  const [documentId, setDocumentId] = useState('us-passport');
 
   // API configuration
-  const API_TOKEN = 'YOUR_API_TOKEN_HERE'; // Replace with your actual token
-  const API_URL = 'https://api.snap2pass.com/create-photo';
+  const API_KEY = process.env.REACT_APP_SNAP2PASS_API_KEY || 'YOUR_API_KEY_HERE';
+  const API_URL = 'https://api.snap2pass.com/process-photo';
+
+  // Document types mapping
+  const documentTypes = [
+    { id: 'us-passport', label: 'US Passport' },
+    { id: 'us-visa', label: 'US Visa' },
+    { id: 'ca-passport', label: 'Canadian Passport' },
+    { id: 'uk-passport', label: 'UK Passport' },
+    { id: 'eu-passport', label: 'EU Passport' },
+    { id: 'in-passport', label: 'Indian Passport' },
+    { id: 'jp-passport', label: 'Japanese Passport' },
+    { id: 'cn-passport', label: 'Chinese Passport' },
+    { id: 'au-passport', label: 'Australian Passport' },
+  ];
+
+  /**
+   * Convert file to base64
+   */
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   /**
    * Handle file selection
@@ -47,9 +61,9 @@ const PhotoProcessor = () => {
         return;
       }
       
-      // Validate file size (9MB limit)
-      if (selectedFile.size > 9 * 1024 * 1024) {
-        setError('File size must be less than 9MB.');
+      // Validate file size (5MB limit)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        setError('File size must be less than 5MB.');
         return;
       }
 
@@ -64,16 +78,6 @@ const PhotoProcessor = () => {
   }, []);
 
   /**
-   * Handle custom specifications change
-   */
-  const handleCustomSpecsChange = useCallback((field, value) => {
-    setCustomSpecs(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  }, []);
-
-  /**
    * Process the photo using Snap2Pass API
    */
   const processPhoto = useCallback(async () => {
@@ -82,42 +86,44 @@ const PhotoProcessor = () => {
       return;
     }
 
+    if (API_KEY === 'YOUR_API_KEY_HERE') {
+      setError('Please set your API key in the REACT_APP_SNAP2PASS_API_KEY environment variable.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const formData = new FormData();
-      formData.append('input_photo', file);
+      // Convert file to base64
+      const base64Image = await fileToBase64(file);
 
-      // Add specifications based on processing mode
-      if (processingMode === 'country') {
-        formData.append('country_code', countryCode);
-        formData.append('document_type', documentType);
-      } else {
-        formData.append('width', customSpecs.width);
-        formData.append('height', customSpecs.height);
-        formData.append('units', customSpecs.units);
-        formData.append('head_to_height_ratio', customSpecs.headToHeightRatio);
-        formData.append('eye_distance_from_top', customSpecs.eyeDistanceFromTop);
-        formData.append('background_color', customSpecs.backgroundColor);
-        formData.append('dpi', customSpecs.dpi);
-      }
-
+      // Make API request
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${API_TOKEN}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`
         },
-        body: formData
+        body: JSON.stringify({
+          photo: base64Image,
+          document_id: documentId
+        })
       });
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.status === 200) {
         setResult(data);
+      } else if (response.status === 401) {
+        setError(`Authentication Error: ${data.error.message}`);
+      } else if (response.status === 402) {
+        setError(`Insufficient Credits: ${data.error.message} (Credits: ${data.error.details.current_credits})`);
+      } else if (response.status === 400) {
+        setError(`Validation Error [${data.error.code}]: ${data.error.message}`);
       } else {
-        setError(data.message || 'An error occurred while processing the photo.');
+        setError(`API Error (${response.status}): ${data.error?.message || 'Unknown error'}`);
       }
     } catch (err) {
       setError('Network error. Please check your connection and try again.');
@@ -125,21 +131,27 @@ const PhotoProcessor = () => {
     } finally {
       setLoading(false);
     }
-  }, [file, processingMode, countryCode, documentType, customSpecs, API_TOKEN]);
+  }, [file, documentId, API_KEY]);
 
   /**
-   * Download the processed photo
+   * Download image from CloudFront URL
    */
-  const downloadPhoto = useCallback(() => {
-    if (result?.document_image_base64) {
+  const downloadPhoto = useCallback(async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
       const link = document.createElement('a');
-      link.href = `data:image/jpeg;base64,${result.document_image_base64}`;
-      link.download = `processed_photo_${Date.now()}.jpg`;
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    } catch (err) {
+      setError('Failed to download image. Please try again.');
+      console.error('Download error:', err);
     }
-  }, [result]);
+  }, []);
 
   /**
    * Reset the form
@@ -151,6 +163,16 @@ const PhotoProcessor = () => {
     setError(null);
     setLoading(false);
   }, []);
+
+  /**
+   * Get validation score color
+   */
+  const getScoreColor = (score) => {
+    if (score >= 90) return '#10b981'; // green
+    if (score >= 75) return '#3b82f6'; // blue
+    if (score >= 60) return '#f59e0b'; // orange
+    return '#ef4444'; // red
+  };
 
   return (
     <div className="photo-processor">
@@ -173,6 +195,7 @@ const PhotoProcessor = () => {
             <label htmlFor="photo-upload" className="upload-button">
               {file ? 'Change Photo' : 'Choose Photo'}
             </label>
+            {file && <span className="file-name">{file.name}</span>}
           </div>
           
           {preview && (
@@ -185,134 +208,22 @@ const PhotoProcessor = () => {
 
         {/* Processing Options */}
         <div className="options-section">
-          <h2>⚙️ Processing Options</h2>
+          <h2>⚙️ Document Type</h2>
           
-          <div className="mode-selector">
-            <label>
-              <input
-                type="radio"
-                value="country"
-                checked={processingMode === 'country'}
-                onChange={(e) => setProcessingMode(e.target.value)}
-              />
-              Country-Specific Requirements
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="custom"
-                checked={processingMode === 'custom'}
-                onChange={(e) => setProcessingMode(e.target.value)}
-              />
-              Custom Specifications
-            </label>
+          <div className="document-selector">
+            <label htmlFor="document-id">Select Document Type:</label>
+            <select 
+              id="document-id"
+              value={documentId} 
+              onChange={(e) => setDocumentId(e.target.value)}
+            >
+              {documentTypes.map((doc) => (
+                <option key={doc.id} value={doc.id}>
+                  {doc.label}
+                </option>
+              ))}
+            </select>
           </div>
-
-          {processingMode === 'country' ? (
-            <div className="country-specs">
-              <div className="form-group">
-                <label>Country Code:</label>
-                <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)}>
-                  <option value="US">United States</option>
-                  <option value="CA">Canada</option>
-                  <option value="GB">United Kingdom</option>
-                  <option value="AU">Australia</option>
-                  <option value="DE">Germany</option>
-                  <option value="FR">France</option>
-                  <option value="JP">Japan</option>
-                  <option value="IN">India</option>
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label>Document Type:</label>
-                <select value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
-                  <option value="passport">Passport</option>
-                  <option value="visa">Visa</option>
-                </select>
-              </div>
-            </div>
-          ) : (
-            <div className="custom-specs">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Width:</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={customSpecs.width}
-                    onChange={(e) => handleCustomSpecsChange('width', parseFloat(e.target.value))}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Height:</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={customSpecs.height}
-                    onChange={(e) => handleCustomSpecsChange('height', parseFloat(e.target.value))}
-                  />
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label>Units:</label>
-                <select 
-                  value={customSpecs.units} 
-                  onChange={(e) => handleCustomSpecsChange('units', e.target.value)}
-                >
-                  <option value="imperial">Imperial (inches)</option>
-                  <option value="metric">Metric (cm)</option>
-                </select>
-              </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Head to Height Ratio:</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.5"
-                    max="0.9"
-                    value={customSpecs.headToHeightRatio}
-                    onChange={(e) => handleCustomSpecsChange('headToHeightRatio', parseFloat(e.target.value))}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Eye Distance from Top:</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.3"
-                    max="0.7"
-                    value={customSpecs.eyeDistanceFromTop}
-                    onChange={(e) => handleCustomSpecsChange('eyeDistanceFromTop', parseFloat(e.target.value))}
-                  />
-                </div>
-              </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Background Color:</label>
-                  <input
-                    type="color"
-                    value={customSpecs.backgroundColor}
-                    onChange={(e) => handleCustomSpecsChange('backgroundColor', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>DPI:</label>
-                  <input
-                    type="number"
-                    min="150"
-                    max="600"
-                    value={customSpecs.dpi}
-                    onChange={(e) => handleCustomSpecsChange('dpi', parseInt(e.target.value))}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Action Buttons */}
@@ -345,35 +256,84 @@ const PhotoProcessor = () => {
             
             <div className="result-info">
               <p><strong>Request ID:</strong> {result.request_id}</p>
-              <p><strong>Trial Number:</strong> {result.trial_number}</p>
-              <p><strong>Message:</strong> {result.message}</p>
+              <p>
+                <strong>Validation Score:</strong>{' '}
+                <span style={{ color: getScoreColor(result.validation.score), fontWeight: 'bold' }}>
+                  {result.validation.score}/100
+                </span>
+              </p>
+              <p><strong>Status:</strong> {result.validation.passed ? '✅ Passed' : '⚠️ Needs Improvement'}</p>
+              <p><strong>Summary:</strong> {result.validation.summary}</p>
             </div>
 
-            {result.validation_errors && result.validation_errors.length > 0 ? (
-              <div className="validation-errors">
-                <h3>⚠️ Validation Errors:</h3>
+            {/* Validation Warnings */}
+            {result.validation.warnings && result.validation.warnings.length > 0 && (
+              <div className="validation-warnings">
+                <h3>⚠️ Warnings:</h3>
                 <ul>
-                  {result.validation_errors.map((error, index) => (
+                  {result.validation.warnings.map((warning, index) => (
+                    <li key={index}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Validation Errors */}
+            {result.validation.errors && result.validation.errors.length > 0 && (
+              <div className="validation-errors">
+                <h3>❌ Critical Issues:</h3>
+                <ul>
+                  {result.validation.errors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}
                 </ul>
               </div>
-            ) : (
+            )}
+
+            {/* No Issues */}
+            {(!result.validation.warnings || result.validation.warnings.length === 0) &&
+             (!result.validation.errors || result.validation.errors.length === 0) && (
               <div className="success-message">
-                <p>🎉 No validation errors! Your photo meets all requirements.</p>
+                <p>🎉 No validation issues! Your photo meets all requirements.</p>
               </div>
             )}
 
-            {result.document_image_base64 && (
-              <div className="processed-photo">
-                <h3>📷 Processed Photo:</h3>
-                <img 
-                  src={`data:image/jpeg;base64,${result.document_image_base64}`} 
-                  alt="Processed photo" 
-                />
-                <button onClick={downloadPhoto} className="download-button">
-                  💾 Download Photo
-                </button>
+            {/* Processed Photos */}
+            {result.image_urls && (
+              <div className="processed-photos">
+                <div className="photo-grid">
+                  <div className="photo-card">
+                    <h3>📥 Input Photo</h3>
+                    <img 
+                      src={result.image_urls.input} 
+                      alt="Input photo" 
+                    />
+                    <button 
+                      onClick={() => downloadPhoto(result.image_urls.input, `input_${result.request_id}.jpg`)}
+                      className="download-button"
+                    >
+                      💾 Download Input
+                    </button>
+                  </div>
+
+                  <div className="photo-card">
+                    <h3>📤 Processed Photo</h3>
+                    <img 
+                      src={result.image_urls.output} 
+                      alt="Processed photo" 
+                    />
+                    <button 
+                      onClick={() => downloadPhoto(result.image_urls.output, `processed_${result.request_id}.jpg`)}
+                      className="download-button"
+                    >
+                      💾 Download Processed
+                    </button>
+                  </div>
+                </div>
+
+                <div className="storage-notice">
+                  <p>⏰ <strong>Note:</strong> Images are available for 30 days via CloudFront CDN</p>
+                </div>
               </div>
             )}
           </div>
@@ -385,11 +345,11 @@ const PhotoProcessor = () => {
           Powered by <a href="https://snap2pass.com" target="_blank" rel="noopener noreferrer">Snap2Pass API</a>
         </p>
         <p>
-          Need help? Contact <a href="mailto:api-support@snap2pass.com">api-support@snap2pass.com</a>
+          Need help? Contact <a href="mailto:support@snap2pass.com">support@snap2pass.com</a>
         </p>
       </div>
     </div>
   );
 };
 
-export default PhotoProcessor; 
+export default PhotoProcessor;
