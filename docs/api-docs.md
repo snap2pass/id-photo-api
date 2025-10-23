@@ -528,4 +528,4 @@ echo "✅ Photo downloaded to processed_photo.jpg"
 
 ---
 
-**Need Help?** Contact us at [support@snap2pass.com](mailto:support@snap2pass.com) or visit [snap2pass.com/business/support](https://snap2pass.com/business/support)
+**Need Help?** Contact us at [support@snap2pass.com](mailto:support@snap2pass.com)
