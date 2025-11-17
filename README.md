@@ -86,7 +86,7 @@ Authorization: Bearer snap2pass_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   },
   "validation": {
     "passed": true,
-    "score": 95,
+    "score": 100,
     "warnings": [],
     "errors": [],
     "summary": "Photo meets all passport requirements"
@@ -112,17 +112,66 @@ Authorization: Bearer snap2pass_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ## 📋 Supported Documents
 
+**44 document types** using ISO 3166-1 alpha-2 country codes across passports, visas, and special documents.
+
+### Passports (24 types)
+
+| Document ID | Country | Dimensions | DPI |
+|-------------|---------|------------|-----|
+| `us-passport` | United States | 2×2 inches | 600 |
+| `ca-passport` | Canada | 70×50 mm | 600 |
+| `gb-passport` | United Kingdom | 45×35 mm | 600 |
+| `de-passport` | Germany | 45×35 mm | 600 |
+| `fr-passport` | France | 45×35 mm | 600 |
+| `es-passport` | Spain | 40×30 mm | 600 |
+| `nl-passport` | Netherlands | 45×35 mm | 600 |
+| `eu-passport` | European Union | 45×35 mm | 300 |
+| `gr-passport` | Greece | 60×40 mm | 300 |
+| `in-passport` | India | 2×2 inches | 300 |
+| `cn-passport` | China | 48×33 mm | 600 |
+| `jp-passport` | Japan | 45×35 mm | 600 |
+| `kr-passport` | South Korea | 45×35 mm | 600 |
+| `hk-passport` | Hong Kong | 50×40 mm | 815 |
+| `tw-passport` | Taiwan | 45×35 mm | 600 |
+| `my-passport` | Malaysia | 50×35 mm | 300 |
+| `vn-passport` | Vietnam | 60×40 mm | 300 |
+| `tr-passport` | Turkey | 60×50 mm | 300 |
+| `ae-passport` | UAE | 60×40 mm | 600 |
+| `mx-passport` | Mexico | 45×35 mm | 600 |
+| `au-passport` | Australia | 45×35 mm | 300 |
+| `baby-2x2-passport` | Baby (2×2) | 2×2 inches | 600 |
+| `baby-35x45-passport` | Baby (35×45) | 45×35 mm | 600 |
+| `us-baby-passport` | US Baby | 2×2 inches | 600 |
+
+### Visas (16 types)
+
+| Document ID | Country | Dimensions | DPI |
+|-------------|---------|------------|-----|
+| `us-visa` | United States | 2×2 inches | 600 |
+| `schengen-visa` | Schengen Area | 45×35 mm | 600 |
+| `gb-visa` | United Kingdom | 45×35 mm | 600 |
+| `ca-visa` | Canada | 45×35 mm | 300 |
+| `au-visa` | Australia | 45×35 mm | 600 |
+| `cn-visa` | China | 48×33 mm | 600 |
+| `in-visa` | India | 2×2 inches | 300 |
+| `jp-visa` | Japan | 45×35 mm | 600 |
+| `my-visa` | Malaysia | 45×35 mm | 600 |
+| `ru-visa` | Russia | 45×35 mm | 600 |
+| `th-visa` | Thailand | 60×40 mm | 600 |
+| `vn-visa` | Vietnam | 60×40 mm | 300 |
+| `eg-visa` | Egypt | 45×35 mm | 600 |
+| `sa-visa` | Saudi Arabia | 2×2 inches | 300 |
+| `kh-visa` | Cambodia | 2×2 inches | 300 |
+| `id-visa` | Indonesia | 60×40 mm | 300 |
+
+### Special Documents (4 types)
+
 | Document ID | Description | Dimensions | DPI |
 |-------------|-------------|------------|-----|
-| `us-passport` | US Passport | 2×2 inches | 300 |
-| `us-visa` | US Visa | 2×2 inches | 300 |
-| `ca-passport` | Canadian Passport | 50×70 mm | 300 |
-| `uk-passport` | UK Passport | 35×45 mm | 300 |
-| `eu-passport` | EU Passport | 35×45 mm | 300 |
-| `in-passport` | Indian Passport | 35×35 mm | 300 |
-| `jp-passport` | Japanese Passport | 35×45 mm | 300 |
-| `cn-passport` | Chinese Passport | 33×48 mm | 300 |
-| `au-passport` | Australian Passport | 35×45 mm | 300 |
+| `us-green-card` | US Green Card | 2×2 inches | 600 |
+| `us-uscis` | US USCIS | 2×2 inches | 600 |
+| `jp-residence` | Japan Residence Card | 40×30 mm | 600 |
+| `es-residence` | Spain Residence Card | 32×26 mm | 600 |
 
 ## ⚠️ Error Handling
 
@@ -450,9 +499,12 @@ processPassportPhoto(
 ### Output Image
 
 - **Format:** JPEG (high quality, 95% compression)
-- **DPI:** 300 (print quality)
+- **DPI:** 300-815 (varies by document type, optimized for print quality)
 - **Dimensions:** Varies by document type (see [Supported Documents](#supported-documents))
-- **Background:** White (RGB: 255, 255, 255)
+- **Background:** White, light gray, or off-white (varies by document requirements)
+  - White: `#FFFFFF` (RGB: 255, 255, 255)
+  - Light gray: `#eeeeee` (RGB: 238, 238, 238)
+  - Off-white: `#fcfcfc` (RGB: 252, 252, 252)
 - **Color Space:** sRGB
 - **Delivery:** Available via CloudFront CDN (images.snap2pass.com, 30-day storage)
 
@@ -600,13 +652,23 @@ def validate_image(base64_image):
 
 ## 📞 Support
 
+- **Documentation:** [docs.snap2pass.com](https://docs.snap2pass.com)
+- **Status Page:** [status.snap2pass.com](https://status.snap2pass.com)
 - **Email Support:** support@snap2pass.com
 - **Business Hours:** Monday-Friday, 9am-5pm EST
-- **GitHub:** [github.com/snap2pass/id-photo-api](https://github.com/snap2pass/id-photo-api)
 
 ## 📝 Changelog
 
-### v2.0.0 (Current)
+### v2.1.0 (Current)
+- ✅ **44 document types using ISO 3166-1 alpha-2 codes** (24 passports, 16 visas, 4 special documents)
+- ✅ **ISO country codes for all documents** (e.g., `ca-passport`, `de-passport`, `gb-visa`)
+- ✅ Enhanced DPI support (300-815 DPI depending on document)
+- ✅ Support for both eye and hair anchor points
+- ✅ Multiple background colors (white, light gray, off-white)
+- ✅ Baby passport photo support
+- ✅ Residence card and green card support
+
+### v2.0.0
 - ✅ Enhanced validation with 14 standardized error codes
 - ✅ 5MB image size limit enforcement
 - ✅ Improved error messages with actionable details
@@ -617,4 +679,4 @@ def validate_image(base64_image):
 
 ---
 
-**Need Help?** Contact us at support@snap2pass.com
+**Need Help?** Contact us at support@snap2pass.com or visit [snap2pass.com/business/support](https://snap2pass.com/business/support)
