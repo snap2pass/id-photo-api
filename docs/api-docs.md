@@ -247,16 +247,30 @@ curl -X POST https://api.snap2pass.com/validate-photo \
   "advisory": true,
   "passed": false,
   "failed_requirements": [
-    {
-      "code": "P03_eyes_visible_and_open",
-      "requirement": "Eyes must be open and clearly visible"
-    }
+    {"code": "head_height", "requirement": "Head height 50-69% of image height"},
+    {"code": "eye_line", "requirement": "Eye line 56-69% from bottom"}
   ],
-  "reasons": ["Eyes are closed or partly closed"],
+  "reasons": ["Head height is 74%, expected 50-69%", "Eye line is 48% from the bottom, expected 56-69%"],
   "warnings": ["Slightly uneven lighting on left side"],
-  "score": 52,
+  "score": 58,
   "summary": "Photo does not meet the checked requirements",
-  "checks_performed": ["pixel_size", "aspect_ratio", "P01_face_presence", "P02_head_pose_and_roll", "P03_eyes_visible_and_open"],
+  "measurements": {
+    "width_px": 1200,
+    "height_px": 1200,
+    "eye_line_from_bottom_pct": 48.0,
+    "face_centre_offset_pct": 0.8,
+    "roll_deg": 1.1,
+    "chin_from_bottom_pct": 21.0,
+    "head_top_from_top_pct": 6.0,
+    "head_height_pct": 74.0,
+    "head_top_method": "segmentation"
+  },
+  "geometry_checks": [
+    {"code": "dimensions", "requirement": "600-1200 px square", "passed": true, "value": "1200x1200", "expected": "600-1200 px, square"},
+    {"code": "head_height", "requirement": "Head height 50-69% of image height", "passed": false, "value": 74.0, "expected": "50-69"},
+    {"code": "eye_line", "requirement": "Eye line 56-69% from bottom", "passed": false, "value": 48.0, "expected": "56-69"}
+  ],
+  "checks_performed": ["dimensions", "aspect_ratio", "head_height", "eye_line", "face_centre", "roll", "chin_in_frame", "P01_face_presence", "P02_head_pose_and_roll", "P03_eyes_visible_and_open"],
   "credits_remaining": 38
 }
 ```
