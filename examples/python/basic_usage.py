@@ -41,7 +41,7 @@ class Snap2PassAPI:
         
         Args:
             photo_path: Path to the input photo file
-            document_id: Document type identifier (e.g., 'us-passport', 'uk-passport')
+            document_id: Document type identifier (e.g., 'us-passport', 'gb-passport')
             
         Returns:
             API response as dictionary
@@ -261,7 +261,7 @@ def main():
     try:
         response = api.process_photo(
             photo_path="sample_photo.jpg",
-            document_id="uk-passport"
+            document_id="gb-passport"
         )
         
         print(f"✅ Success!")
@@ -304,7 +304,7 @@ def main():
     
     photos = [
         ("photo1.jpg", "us-passport"),
-        ("photo2.jpg", "uk-passport"),
+        ("photo2.jpg", "gb-passport"),
         ("photo3.jpg", "eu-passport"),
     ]
     

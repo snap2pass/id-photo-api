@@ -173,7 +173,7 @@ The component uses the new JSON-based API:
 | `us-passport` | US Passport |
 | `us-visa` | US Visa |
 | `ca-passport` | Canadian Passport |
-| `uk-passport` | UK Passport |
+| `gb-passport` | UK Passport |
 | `eu-passport` | EU Passport |
 | `in-passport` | Indian Passport |
 | `jp-passport` | Japanese Passport |

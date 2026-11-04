@@ -90,7 +90,7 @@ curl -X POST https://api.snap2pass.com/process-photo \
   }'
 ```
 
-**Example: UK Passport Photo**
+**Example: UK Passport Photo (`gb-passport`)**
 
 ```bash
 curl -X POST https://api.snap2pass.com/process-photo \
@@ -98,7 +98,7 @@ curl -X POST https://api.snap2pass.com/process-photo \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
     "photo": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-    "document_id": "uk-passport"
+    "document_id": "gb-passport"
   }'
 ```
 
@@ -168,6 +168,109 @@ curl -X POST https://api.snap2pass.com/process-photo \
   }
 }
 ```
+
+### POST /validate-photo
+
+#### Description
+
+Checks a photo you plan to submit **unchanged**. It does not crop, resize or change the background, and it returns no image. You get a pass/fail result with a reason for each failed requirement. The result is **advisory**: the issuing authority makes the final decision.
+
+- **Auth and request body:** same as [`POST /process-photo`](#post-process-photo) (Bearer API key; `photo` and `document_id`).
+- **Cost:** 1 credit per successful call. Errors are not charged. If your balance is 0 the call returns `402`.
+- **Latency:** typically 10-20 seconds. Set your client timeout to 60 seconds.
+
+#### What it checks
+
+- **Photo quality and subject** (expert review against ICAO 9303 rules, reported as P-codes): face presence, head pose and roll, eyes visible and open, eyebrows, hair and head coverings, expression and mouth, eyewear and reflections, lighting and shadows, exposure and skin tone, focus and motion blur, pixelation and noise, camera geometry, eye-level and gaze, body alignment, and (where the document forbids them) glasses and jewelry.
+- **Pixel size and aspect ratio** against the document's specification, reported by code.
+
+#### What it does not check
+
+- Background colour or uniformity.
+- Head size and position as they would appear on the final print.
+
+#### Example Request
+
+```bash
+curl -X POST https://api.snap2pass.com/validate-photo \
+  --max-time 60 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "photo": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "document_id": "us-passport"
+  }'
+```
+
+#### Response
+
+**Status Code:** `200 OK`
+
+```json
+{
+  "success": true,
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "advisory": true,
+  "passed": true,
+  "failed_requirements": [],
+  "reasons": [],
+  "warnings": [],
+  "score": 94,
+  "summary": "Photo meets the checked requirements",
+  "checks_performed": ["pixel_size", "aspect_ratio", "P01_face_presence", "P02_head_pose_and_roll", "P03_eyes_visible_and_open"],
+  "credits_remaining": 39
+}
+```
+
+**Example: failing photo** (still `200 OK` and still charged: the check ran and gave a result)
+
+```json
+{
+  "success": true,
+  "request_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "advisory": true,
+  "passed": false,
+  "failed_requirements": [
+    {
+      "code": "P03_eyes_visible_and_open",
+      "requirement": "Eyes must be open and clearly visible"
+    }
+  ],
+  "reasons": ["Eyes are closed or partly closed"],
+  "warnings": ["Slightly uneven lighting on left side"],
+  "score": 52,
+  "summary": "Photo does not meet the checked requirements",
+  "checks_performed": ["pixel_size", "aspect_ratio", "P01_face_presence", "P02_head_pose_and_roll", "P03_eyes_visible_and_open"],
+  "credits_remaining": 38
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | boolean | `true` when the check ran and returned a result |
+| `request_id` | string | Unique UUID for this request |
+| `advisory` | boolean | Always `true`: the result is guidance, not a decision by the issuing authority |
+| `passed` | boolean | `true` if no requirement failed |
+| `failed_requirements` | array | One entry per failed requirement: `code` (a P-code, or a pixel size / aspect ratio code) and `requirement` (what is required) |
+| `reasons` | array | Human-readable reason for each failure |
+| `warnings` | array | Non-critical issues that did not fail the photo |
+| `score` | number | Quality score from 0-100 |
+| `summary` | string | Human-readable assessment |
+| `checks_performed` | array | Codes of the checks that ran |
+| `credits_remaining` | number | Credits left after this call |
+
+#### Errors
+
+Errors use the [standard error format](#error-response-format).
+
+| HTTP Status | Error Code | When |
+|-------------|-----------|------|
+| 400 | `INVALID_JSON`, `MISSING_REQUIRED_FIELD`, `INVALID_DOCUMENT_ID`, `INVALID_IMAGE_FORMAT`, `IMAGE_TOO_LARGE` | The request is malformed (see [Validation Errors](#validation-errors-400)) |
+| 401 | `MISSING_AUTHORIZATION`, `INVALID_API_KEY` | Missing or invalid API key |
+| 402 | `INSUFFICIENT_CREDITS` | Balance is 0 |
+| 500 | `INTERNAL_ERROR` | The check could not run. Retry, or contact support with the `request_id` |
 
 ## Error Handling
 
@@ -239,7 +342,7 @@ All API errors follow a standardized format for easy parsing and handling.
     "message": "Invalid document_id: 'mars-passport'",
     "details": {
       "provided": "mars-passport",
-      "valid_options": ["us-passport", "us-visa", "ca-passport", "uk-passport", "eu-passport", "in-passport", "jp-passport", "cn-passport", "au-passport"]
+      "valid_options": ["us-passport", "us-visa", "ca-passport", "gb-passport", "eu-passport", "in-passport", "jp-passport", "cn-passport", "au-passport"]
     }
   }
 }
@@ -313,16 +416,20 @@ The `validation` object in successful responses contains:
 
 ### Common Validation Issues
 
-| Issue | Type | Description | Solution |
-|-------|------|-------------|----------|
-| Poor lighting | Warning | Uneven or harsh lighting | Use natural, diffused lighting |
-| Glasses detected | Warning | Eyeglasses visible | Remove glasses if possible (requirements vary by country) |
-| Slight blur | Warning | Minor focus issues | Use better camera or focus |
-| Face not centered | Error | Face not properly centered | Center face in frame |
-| Eyes closed | Error | Eyes not fully visible | Ensure eyes are open and visible |
-| Mouth open | Error | Non-neutral expression | Keep mouth closed |
-| Multiple faces | Error | More than one person detected | Photo must contain only one person |
-| No face detected | Error | Face detection failed | Ensure clear, front-facing portrait |
+`/process-photo` runs a basic automated check on the processed photo. These are the only issues it reports in `validation.errors`:
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| `face_not_straight` | Head is turned or tilted | Face the camera directly |
+| `eyes_not_open` | Eyes not fully open | Ensure eyes are open and visible |
+| `mouth_open` | Non-neutral expression | Keep mouth closed |
+| `eyeglasses_detected` | Eyeglasses visible | Remove glasses |
+| `sunglasses_detected` | Sunglasses visible | Remove sunglasses |
+| `hat_detected` | Hat or head covering visible | Remove it, unless worn for religious reasons |
+| `jewelry_detected` | Jewelry visible | Remove jewelry |
+| `earrings_detected` | Earrings visible | Remove earrings |
+
+This check does not assess blur, lighting, exposure, framing or head size. To check a photo for those before you submit it unchanged, use [`POST /validate-photo`](#post-validate-photo).
 
 ## Privacy & Security
 
@@ -421,7 +528,7 @@ Below is the complete list of supported document types with their specifications
 | `us-passport` | US Passport | 2×2 inches | 300 |
 | `us-visa` | US Visa | 2×2 inches | 300 |
 | `ca-passport` | Canadian Passport | 50×70 mm | 300 |
-| `uk-passport` | UK Passport | 35×45 mm | 300 |
+| `gb-passport` | UK Passport | 35×45 mm | 300 |
 | `eu-passport` | EU Passport | 35×45 mm | 300 |
 | `in-passport` | Indian Passport | 35×35 mm | 300 |
 | `jp-passport` | Japanese Passport | 35×45 mm | 300 |
@@ -509,6 +616,10 @@ echo "✅ Photo downloaded to processed_photo.jpg"
 - **Website**: [snap2pass.com](https://snap2pass.com)
 
 ## Changelog
+
+### Unreleased
+- Added `POST /validate-photo`
+- Fixed the UK passport document id: `gb-passport` (not `uk-passport`)
 
 ### v2.0.0 (Current)
 - ✅ JSON-based API (replacing multipart form data)
