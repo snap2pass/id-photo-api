@@ -217,23 +217,94 @@ curl -X POST https://api.snap2pass.com/validate-photo \
   "warnings": [],
   "score": 94,
   "summary": "Photo meets the checked requirements",
+  "checks_performed": [
+    "dimensions",
+    "aspect_ratio",
+    "head_height",
+    "eye_line",
+    "face_centre",
+    "roll",
+    "chin_in_frame",
+    "P01_face_presence",
+    "P02_head_pose_and_roll",
+    "P03_eyes_visible_and_open",
+    "P04_eyebrows_visible",
+    "P05_hair_and_head_coverings",
+    "P06_expression_and_mouth",
+    "P07_eyewear_and_reflections",
+    "P08_lighting_and_shadows",
+    "P09_exposure_contrast_skin_tone",
+    "P10_focus_and_motion_blur",
+    "P11_pixelation_upscale_and_noise",
+    "P12_camera_geometry_distance_focal_length",
+    "P13_camera_at_eye_level_and_gaze",
+    "P14_biometric_geometry_viability",
+    "P15_body_alignment_and_intrusions",
+    "P16_no_glasses",
+    "P17_no_jewelry"
+  ],
   "measurements": {
     "width_px": 1200,
     "height_px": 1200,
-    "eye_line_from_bottom_pct": 62.0,
+    "eye_line_from_bottom_pct": 60.3,
     "face_centre_offset_pct": 0.8,
     "roll_deg": 1.1,
-    "chin_from_bottom_pct": 21.0,
-    "head_top_from_top_pct": 12.0,
-    "head_height_pct": 67.0,
+    "chin_from_bottom_pct": 18.9,
+    "head_top_from_top_pct": 18.7,
+    "head_height_pct": 62.4,
     "head_top_method": "segmentation"
   },
   "geometry_checks": [
-    {"code": "dimensions", "requirement": "600-1200 px square", "passed": true, "value": "1200x1200", "expected": "600-1200 px, square"},
-    {"code": "head_height", "requirement": "Head height 50-69% of image height", "passed": true, "value": 67.0, "expected": "50-69"},
-    {"code": "eye_line", "requirement": "Eye line 56-69% from bottom", "passed": true, "value": 62.0, "expected": "56-69"}
+    {
+      "code": "dimensions",
+      "requirement": "Photo size in pixels",
+      "passed": true,
+      "value": "1200x1200",
+      "expected": "600 to 1200 px per side"
+    },
+    {
+      "code": "aspect_ratio",
+      "requirement": "Photo shape (width / height)",
+      "passed": true,
+      "value": 1.0,
+      "expected": "1 +/- 0.01"
+    },
+    {
+      "code": "head_height",
+      "requirement": "Head height (chin to top of head) as % of photo height",
+      "passed": true,
+      "value": 62.4,
+      "expected": "50 to 68.75%"
+    },
+    {
+      "code": "eye_line",
+      "requirement": "Eye line height from the bottom as % of photo height",
+      "passed": true,
+      "value": 60.3,
+      "expected": "56.25 to 68.75%"
+    },
+    {
+      "code": "face_centre",
+      "requirement": "Face horizontally centred (offset, % of photo width)",
+      "passed": true,
+      "value": 0.8,
+      "expected": "within +/-5%"
+    },
+    {
+      "code": "roll",
+      "requirement": "Head not tilted (eye-line angle)",
+      "passed": true,
+      "value": 1.1,
+      "expected": "within +/-5 deg"
+    },
+    {
+      "code": "chin_in_frame",
+      "requirement": "Chin inside the photo",
+      "passed": true,
+      "value": 18.9,
+      "expected": "at least 0% from bottom"
+    }
   ],
-  "checks_performed": ["dimensions", "aspect_ratio", "head_height", "eye_line", "face_centre", "roll", "chin_in_frame", "P01_face_presence", "P02_head_pose_and_roll", "P03_eyes_visible_and_open"],
   "credits_remaining": 39
 }
 ```
@@ -247,30 +318,112 @@ curl -X POST https://api.snap2pass.com/validate-photo \
   "advisory": true,
   "passed": false,
   "failed_requirements": [
-    {"code": "head_height", "requirement": "Head height 50-69% of image height"},
-    {"code": "eye_line", "requirement": "Eye line 56-69% from bottom"}
+    {
+      "code": "head_height",
+      "requirement": "Head height (chin to top of head) as % of photo height"
+    },
+    {
+      "code": "eye_line",
+      "requirement": "Eye line height from the bottom as % of photo height"
+    }
   ],
-  "reasons": ["Head height is 74%, expected 50-69%", "Eye line is 48% from the bottom, expected 56-69%"],
-  "warnings": ["Slightly uneven lighting on left side"],
+  "reasons": [
+    "Head height (chin to top of head) as % of photo height: measured 72.4, expected 50 to 68.75%",
+    "Eye line height from the bottom as % of photo height: measured 54.1, expected 56.25 to 68.75%"
+  ],
+  "warnings": [
+    "Slight shadow"
+  ],
   "score": 58,
   "summary": "Photo does not meet the checked requirements",
+  "checks_performed": [
+    "dimensions",
+    "aspect_ratio",
+    "head_height",
+    "eye_line",
+    "face_centre",
+    "roll",
+    "chin_in_frame",
+    "P01_face_presence",
+    "P02_head_pose_and_roll",
+    "P03_eyes_visible_and_open",
+    "P04_eyebrows_visible",
+    "P05_hair_and_head_coverings",
+    "P06_expression_and_mouth",
+    "P07_eyewear_and_reflections",
+    "P08_lighting_and_shadows",
+    "P09_exposure_contrast_skin_tone",
+    "P10_focus_and_motion_blur",
+    "P11_pixelation_upscale_and_noise",
+    "P12_camera_geometry_distance_focal_length",
+    "P13_camera_at_eye_level_and_gaze",
+    "P14_biometric_geometry_viability",
+    "P15_body_alignment_and_intrusions",
+    "P16_no_glasses",
+    "P17_no_jewelry"
+  ],
   "measurements": {
     "width_px": 1200,
     "height_px": 1200,
-    "eye_line_from_bottom_pct": 48.0,
-    "face_centre_offset_pct": 0.8,
-    "roll_deg": 1.1,
-    "chin_from_bottom_pct": 21.0,
-    "head_top_from_top_pct": 6.0,
-    "head_height_pct": 74.0,
+    "eye_line_from_bottom_pct": 54.1,
+    "face_centre_offset_pct": -1.2,
+    "roll_deg": 0.6,
+    "chin_from_bottom_pct": 15.3,
+    "head_top_from_top_pct": 12.3,
+    "head_height_pct": 72.4,
     "head_top_method": "segmentation"
   },
   "geometry_checks": [
-    {"code": "dimensions", "requirement": "600-1200 px square", "passed": true, "value": "1200x1200", "expected": "600-1200 px, square"},
-    {"code": "head_height", "requirement": "Head height 50-69% of image height", "passed": false, "value": 74.0, "expected": "50-69"},
-    {"code": "eye_line", "requirement": "Eye line 56-69% from bottom", "passed": false, "value": 48.0, "expected": "56-69"}
+    {
+      "code": "dimensions",
+      "requirement": "Photo size in pixels",
+      "passed": true,
+      "value": "1200x1200",
+      "expected": "600 to 1200 px per side"
+    },
+    {
+      "code": "aspect_ratio",
+      "requirement": "Photo shape (width / height)",
+      "passed": true,
+      "value": 1.0,
+      "expected": "1 +/- 0.01"
+    },
+    {
+      "code": "head_height",
+      "requirement": "Head height (chin to top of head) as % of photo height",
+      "passed": false,
+      "value": 72.4,
+      "expected": "50 to 68.75%"
+    },
+    {
+      "code": "eye_line",
+      "requirement": "Eye line height from the bottom as % of photo height",
+      "passed": false,
+      "value": 54.1,
+      "expected": "56.25 to 68.75%"
+    },
+    {
+      "code": "face_centre",
+      "requirement": "Face horizontally centred (offset, % of photo width)",
+      "passed": true,
+      "value": -1.2,
+      "expected": "within +/-5%"
+    },
+    {
+      "code": "roll",
+      "requirement": "Head not tilted (eye-line angle)",
+      "passed": true,
+      "value": 0.6,
+      "expected": "within +/-5 deg"
+    },
+    {
+      "code": "chin_in_frame",
+      "requirement": "Chin inside the photo",
+      "passed": true,
+      "value": 15.3,
+      "expected": "at least 0% from bottom"
+    }
   ],
-  "checks_performed": ["dimensions", "aspect_ratio", "head_height", "eye_line", "face_centre", "roll", "chin_in_frame", "P01_face_presence", "P02_head_pose_and_roll", "P03_eyes_visible_and_open"],
   "credits_remaining": 38
 }
 ```
@@ -284,7 +437,7 @@ curl -X POST https://api.snap2pass.com/validate-photo \
 | `advisory` | boolean | Always `true`: the result is guidance, not a decision by the issuing authority |
 | `passed` | boolean | `true` if no requirement failed |
 | `failed_requirements` | array | One entry per failed requirement: `code` (a P-code or a geometry code) and `requirement` (what is required) |
-| `reasons` | array | Human-readable reason for each failure |
+| `reasons` | array | One reason per failure, in the form `<requirement>: measured <value>, expected <expected>`. If the top of the head touches the top edge of the photo, the `head_height` requirement reads "Top of head is cut off by the frame" and its reason is "Top of head is cut off by the frame (hair touches the top edge)" |
 | `warnings` | array | Non-critical issues that did not fail the photo |
 | `score` | number | Quality score from 0-100 |
 | `summary` | string | Human-readable assessment |
