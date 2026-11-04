@@ -76,14 +76,17 @@ The examples include comprehensive error handling for:
 
 ## Validation Errors
 
-The API may return validation errors such as:
+In the default (basic) mode, `validation.errors` can contain only these codes:
 - `face_not_straight`
-- `blurred_photo`
-- `too_dark_photo`
 - `eyeglasses_detected`
-- And more...
+- `sunglasses_detected`
+- `mouth_open`
+- `eyes_not_open`
+- `hat_detected`
+- `jewelry_detected`
+- `earrings_detected`
 
-Check the `validation_errors` field in the response to handle these cases.
+Check `response['validation']['errors']` to handle these cases.
 
 ## Support
 

@@ -172,25 +172,22 @@ The examples include comprehensive error handling for:
 - **File Validation**: Checks file existence, size, and format
 - **Network Errors**: Handles connection issues and timeouts
 - **API Errors**: Formats and displays server error messages
-- **Validation Errors**: Shows photo compliance issues
+- **Validation Errors**: Shows issues found by the photo check
 
 ## Validation Errors
 
-Common validation errors include:
+In the default (basic) mode, `validation.errors` can contain only these codes:
 
-- `face_not_straight` - Face not properly aligned
-- `blurred_photo` - Image is too blurry
-- `too_dark_photo` - Insufficient lighting
+- `face_not_straight` - No face found, or head turned or tilted
 - `eyeglasses_detected` - Glasses not allowed
-- `hat_detected` - Hat not allowed
 - `sunglasses_detected` - Sunglasses not allowed
 - `mouth_open` - Mouth should be closed
 - `eyes_not_open` - Eyes should be open
-- `no_clothing` - Person should be wearing clothes
-- `not_light_color_background` - Background should be light
-- `left_ear_not_visible` - Left ear should be visible
-- `right_ear_not_visible` - Right ear should be visible
-- `camera_too_close` - Camera too close to subject
+- `hat_detected` - Hat not allowed
+- `jewelry_detected` - Jewelry not allowed
+- `earrings_detected` - Earrings not allowed
+
+See [Common Validation Issues](https://github.com/snap2pass/id-photo-api/blob/main/docs/api-docs.md#common-validation-issues) for details.
 
 ## File Requirements
 

@@ -4,7 +4,7 @@
 
 ### What is Snap2Pass API?
 
-Snap2Pass API is a professional service that automatically processes and validates passport and visa photos according to specific document requirements. It uses advanced AI technology to remove backgrounds, adjust photo dimensions, and validate compliance with official standards.
+Snap2Pass API is a professional service that automatically processes and validates passport and visa photos according to specific document requirements. It uses advanced AI technology to remove backgrounds, adjust photo dimensions, and run an automated photo check. It does not certify that a photo will be accepted by an issuing authority.
 
 ### How accurate is the service?
 
@@ -83,7 +83,7 @@ Simply download the image from the URL - no authentication required.
 
 ### How long are images stored?
 
-Images are automatically deleted after **30 days** from the CloudFront CDN. If you need images for longer, download and store them in your own storage.
+Images are automatically deleted after **30 days**. If you need images for longer, download and store them in your own storage.
 
 ## Pricing & Billing
 
@@ -285,8 +285,7 @@ Yes, we take security seriously:
 
 We store:
 - Images in encrypted S3 bucket (deleted after 30 days)
-- Request parameters and metadata (for analytics and support)
-- Validation results (for quality improvement)
+- Request parameters, metadata and validation results (for analytics and support). These are not deleted automatically
 
 We do NOT:
 - Share your images with third parties
@@ -296,12 +295,11 @@ We do NOT:
 ### How long do you retain data?
 
 - **Images**: Automatically deleted after **30 days**
-- **Request metadata**: Retained for 12 months for support and analytics
-- **Validation results**: Retained for service improvement
+- **Request records** (parameters, metadata, validation results): no automatic deletion and no fixed retention period
 
 ### Can I request data deletion?
 
-Yes, you can request deletion of your data by contacting [support@snap2pass.com](mailto:support@snap2pass.com). Note that images are automatically deleted after 30 days.
+Yes, you can request deletion of your data by contacting [support@snap2pass.com](mailto:support@snap2pass.com). Images are automatically deleted after 30 days; request records are not.
 
 ### Should I use the API from client-side code?
 

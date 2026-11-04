@@ -21,7 +21,7 @@ To create an account and start using our API, please sign up at [snap2pass.com/b
 
 ### Overview
 
-This API processes and validates passport or visa photos based on specified document requirements. It accepts JSON requests with base64-encoded images, processes them, validates compliance, and returns CloudFront URLs for the processed images along with detailed validation results.
+This API processes and validates passport or visa photos based on specified document requirements. It accepts JSON requests with base64-encoded images, processes them, runs an automated photo check (see [Common Validation Issues](#common-validation-issues)), and returns CloudFront URLs for the processed images along with the validation results.
 
 **Note:** The maximum image size is **5MB** (base64-encoded).
 
@@ -54,7 +54,7 @@ Replace `snap2pass_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx` with your actual API key.
 
 #### Description
 
-This endpoint accepts a base64-encoded photo and processes it according to specified document requirements. It validates the photo for compliance and returns CloudFront URLs for both input and output images, along with detailed validation results.
+This endpoint accepts a base64-encoded photo and processes it according to specified document requirements. It runs an automated photo check and returns CloudFront URLs for both input and output images, along with the validation results. It does not certify that a photo will be accepted by an issuing authority.
 
 #### Request
 
@@ -134,7 +134,7 @@ curl -X POST https://api.snap2pass.com/process-photo \
 | `request_id` | string | Unique UUID for this request |
 | `image_urls.input` | string | CloudFront URL for the uploaded input image |
 | `image_urls.output` | string | CloudFront URL for the processed output image |
-| `validation.passed` | boolean | Whether the photo passes all compliance checks |
+| `validation.passed` | boolean | Whether the automated photo check found no errors |
 | `validation.score` | number | Quality score from 0-100 |
 | `validation.warnings` | array | Non-critical issues that won't cause rejection |
 | `validation.errors` | array | Critical issues that may cause rejection |
@@ -614,7 +614,7 @@ In its default (basic) mode, `/process-photo` runs an automated check on the pro
 | `jewelry_detected` | Jewelry visible | Remove jewelry |
 | `earrings_detected` | Earrings visible | Remove earrings |
 
-This check does not assess blur, lighting, exposure, framing or head size. To check a photo for those before you submit it unchanged, use [`POST /validate-photo`](#post-validate-photo).
+`face_not_straight` is also reported when no face is found. If the check itself cannot run, no issues are reported. With `validation_mode` set to `expert`, errors are descriptive messages from Expert Review instead of these codes. This check does not assess blur, lighting, exposure, framing or head size. To check a photo for those before you submit it unchanged, use [`POST /validate-photo`](#post-validate-photo).
 
 ## Privacy & Security
 
@@ -625,7 +625,7 @@ We take the privacy and security of your data seriously.
 - **Images**: Stored in private AWS S3 bucket with server-side encryption (AES-256)
 - **CDN Delivery**: Images served via CloudFront with custom domain (`images.snap2pass.com`)
 - **Retention**: Images automatically deleted after **30 days**
-- **Metadata**: Request parameters and validation results stored for analytics
+- **Request records**: Request parameters and validation results are stored. No retention period is set for them, and they are not deleted automatically.
 - **No Sharing**: Images are never shared with third parties or used for AI training
 
 ### Security Features
@@ -633,7 +633,7 @@ We take the privacy and security of your data seriously.
 - **Encryption**: All API requests use HTTPS with TLS 1.2+
 - **Authentication**: API key-based authentication with Bearer token
 - **Access Control**: CloudFront-only access to S3 bucket (no direct S3 URLs)
-- **Automatic Cleanup**: Scheduled deletion of images after 30 days
+- **Automatic Cleanup**: Stored images are deleted after 30 days
 - **Rate Limiting**: Protection against abuse (limits vary by account tier)
 
 ### Best Practices
@@ -810,7 +810,7 @@ echo "✅ Photo downloaded to processed_photo.jpg"
 - ✅ JSON-based API (replacing multipart form data)
 - ✅ CloudFront CDN delivery with custom domain
 - ✅ Enhanced validation with detailed scoring system
-- ✅ Standardized error codes (14 types)
+- ✅ Standardized error codes
 - ✅ 5MB image size limit
 - ✅ 30-day image retention
 - ✅ Support for 9 document types

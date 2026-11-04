@@ -43,7 +43,7 @@ Authorization: Bearer snap2pass_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 **Base URL:** `https://api.snap2pass.com`
 
-**Endpoint:** `POST /process-photo`
+**Endpoints:** `POST /process-photo` (crop and return a processed photo) and `POST /validate-photo` (check a photo you will submit unchanged; no image is returned). See [`POST /validate-photo`](docs/api-docs.md#post-validate-photo).
 
 **Region:** `us-east-1` (US East - N. Virginia)
 
@@ -102,7 +102,7 @@ Authorization: Bearer snap2pass_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 | `request_id` | string | Unique identifier for this request |
 | `image_urls.input` | string | CloudFront URL for input image (available for 30 days) |
 | `image_urls.output` | string | CloudFront URL for processed output image (available for 30 days) |
-| `validation.passed` | boolean | Whether photo passes compliance checks |
+| `validation.passed` | boolean | Whether the automated photo check found no errors |
 | `validation.score` | number | Quality score (0-100) |
 | `validation.warnings` | array | Non-critical issues (photo still usable) |
 | `validation.errors` | array | Critical issues (photo may be rejected) |
@@ -644,7 +644,7 @@ def validate_image(base64_image):
 ## 🔒 Security & Privacy
 
 - **Encryption:** All API requests use HTTPS (TLS 1.2+)
-- **Data Retention:** Images automatically deleted after 30 days
+- **Data Retention:** Images automatically deleted after 30 days. Request records are not deleted automatically
 - **CDN Delivery:** Images served via CloudFront CDN with custom domain (images.snap2pass.com)
 - **No Sharing:** Your images are never shared or used for training
 - **API Key Security:** Never expose your API key in client-side code
@@ -669,7 +669,7 @@ def validate_image(base64_image):
 - ✅ Residence card and green card support
 
 ### v2.0.0
-- ✅ Enhanced validation with 14 standardized error codes
+- ✅ Enhanced validation with standardized error codes
 - ✅ 5MB image size limit enforcement
 - ✅ Improved error messages with actionable details
 - ✅ AI-powered Expert Review validation
