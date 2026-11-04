@@ -177,7 +177,7 @@ Checks a photo you plan to submit **unchanged**. It does not crop, resize or cha
 
 - **Auth and request body:** same as [`POST /process-photo`](#post-process-photo) (Bearer API key; `photo` and `document_id`).
 - **Cost:** 1 credit per successful call. Errors are not charged. If your balance is 0 the call returns `402`.
-- **Latency:** typically 10-20 seconds. Set your client timeout to 60 seconds.
+- **Latency:** typically 10-20 seconds. Set your client timeout to 70 seconds.
 
 #### What it checks
 
@@ -290,7 +290,7 @@ Checks a photo you plan to submit **unchanged**. It does not crop, resize or cha
 
 - **Auth and request body:** same as [`POST /process-photo`](#post-process-photo) (Bearer API key; `photo` and `document_id`).
 - **Cost:** 1 credit per successful call. Errors are not charged. If your balance is 0 the call returns `402`.
-- **Latency:** typically 10-20 seconds. Set your client timeout to 60 seconds.
+- **Latency:** typically 10-20 seconds. Set your client timeout to 70 seconds.
 
 #### What it checks
 
@@ -306,7 +306,7 @@ Checks a photo you plan to submit **unchanged**. It does not crop, resize or cha
 
 ```bash
 curl -X POST https://api.snap2pass.com/validate-photo \
-  --max-time 60 \
+  --max-time 70 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -439,7 +439,7 @@ Checks a photo you plan to submit **unchanged**. It does not crop, resize or cha
 
 - **Auth and request body:** same as [`POST /process-photo`](#post-process-photo) (Bearer API key; `photo` and `document_id`).
 - **Cost:** 1 credit per successful call. Errors are not charged. If your balance is 0 the call returns `402`.
-- **Latency:** typically 10-20 seconds. Set your client timeout to 60 seconds.
+- **Latency:** typically 10-20 seconds. Set your client timeout to 70 seconds.
 
 #### What it checks
 
@@ -552,7 +552,7 @@ Checks a photo you plan to submit **unchanged**. It does not crop, resize or cha
 
 - **Auth and request body:** same as [`POST /process-photo`](#post-process-photo) (Bearer API key; `photo` and `document_id`).
 - **Cost:** 1 credit per successful call. Errors are not charged. If your balance is 0 the call returns `402`.
-- **Latency:** typically 10-20 seconds. Set your client timeout to 60 seconds.
+- **Latency:** typically 10-20 seconds. Set your client timeout to 70 seconds.
 
 #### What it checks
 
@@ -568,7 +568,7 @@ Checks a photo you plan to submit **unchanged**. It does not crop, resize or cha
 
 ```bash
 curl -X POST https://api.snap2pass.com/validate-photo \
-  --max-time 60 \
+  --max-time 70 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -1012,7 +1012,7 @@ echo "✅ Photo downloaded to processed_photo.jpg"
 
 ### Unreleased
 - Added `POST /validate-photo`
-- Fixed the UK passport document id: use `gb-passport`; `uk-passport` is not accepted and returns `INVALID_DOCUMENT_ID`
+- Corrected the example document id: the UK passport id is `gb-passport`
 
 ### v2.0.0 (Current)
 - ✅ JSON-based API (replacing multipart form data)
