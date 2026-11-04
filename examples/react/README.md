@@ -204,7 +204,7 @@ The component uses the new JSON-based API:
 
 ### Validation Response Fields
 
-- **`passed`**: Boolean indicating if photo meets requirements
+- **`passed`**: Boolean: `true` if the automated photo check found no errors
 - **`score`**: Quality score from 0-100
   - 90-100: Excellent quality
   - 75-89: Good quality (acceptable)

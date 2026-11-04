@@ -294,7 +294,7 @@ const PhotoProcessor = () => {
             {(!result.validation.warnings || result.validation.warnings.length === 0) &&
              (!result.validation.errors || result.validation.errors.length === 0) && (
               <div className="success-message">
-                <p>🎉 No validation issues! Your photo meets all requirements.</p>
+                <p>🎉 No validation issues found.</p>
               </div>
             )}
 

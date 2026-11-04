@@ -176,7 +176,7 @@ The examples include comprehensive error handling for:
 
 ## Validation Errors
 
-In the default (basic) mode, `validation.errors` can contain only these codes:
+In basic mode, `validation.errors` contains only:
 
 - `face_not_straight` - No face found, or head turned or tilted
 - `eyeglasses_detected` - Glasses not allowed
@@ -187,7 +187,7 @@ In the default (basic) mode, `validation.errors` can contain only these codes:
 - `jewelry_detected` - Jewelry not allowed
 - `earrings_detected` - Earrings not allowed
 
-See [Common Validation Issues](https://github.com/snap2pass/id-photo-api/blob/main/docs/api-docs.md#common-validation-issues) for details.
+See [Common Validation Issues](../../docs/api-docs.md#common-validation-issues) for details.
 
 ## File Requirements
 

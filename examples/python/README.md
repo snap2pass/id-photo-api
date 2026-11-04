@@ -76,7 +76,7 @@ The examples include comprehensive error handling for:
 
 ## Validation Errors
 
-In the default (basic) mode, `validation.errors` can contain only these codes:
+In basic mode, `validation.errors` contains only:
 - `face_not_straight`
 - `eyeglasses_detected`
 - `sunglasses_detected`
@@ -86,7 +86,7 @@ In the default (basic) mode, `validation.errors` can contain only these codes:
 - `jewelry_detected`
 - `earrings_detected`
 
-Check `response['validation']['errors']` to handle these cases.
+Check `response['validation']['errors']` to handle these cases. See [Common Validation Issues](../../docs/api-docs.md#common-validation-issues).
 
 ## Support
 

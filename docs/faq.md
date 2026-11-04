@@ -4,7 +4,7 @@
 
 ### What is Snap2Pass API?
 
-Snap2Pass API is a professional service that automatically processes and validates passport and visa photos according to specific document requirements. It uses advanced AI technology to remove backgrounds, adjust photo dimensions, and run an automated photo check. It does not certify that a photo will be accepted by an issuing authority.
+Snap2Pass API is a professional service that automatically processes and validates passport and visa photos according to specific document requirements. It uses advanced AI technology to remove backgrounds, adjust photo dimensions, and run an automated photo check.
 
 ### How accurate is the service?
 
@@ -299,7 +299,7 @@ We do NOT:
 
 ### Can I request data deletion?
 
-Yes, you can request deletion of your data by contacting [support@snap2pass.com](mailto:support@snap2pass.com). Images are automatically deleted after 30 days; request records are not.
+Yes, you can request deletion of your data by contacting [support@snap2pass.com](mailto:support@snap2pass.com). Images are deleted after 30 days; request records are not.
 
 ### Should I use the API from client-side code?
 

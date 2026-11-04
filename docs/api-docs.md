@@ -589,7 +589,7 @@ The `validation` object in successful responses contains:
 
 ### Understanding Validation Results
 
-- **`passed`**: `true` if photo meets minimum requirements, `false` if critical issues exist
+- **`passed`**: `true` if the automated photo check found no errors, `false` otherwise
 - **`score`**: 0-100 quality score (higher is better)
   - 90-100: Excellent quality
   - 75-89: Good quality (acceptable)
@@ -605,7 +605,7 @@ In its default (basic) mode, `/process-photo` runs an automated check on the pro
 
 | Code | Description | Solution |
 |------|-------------|----------|
-| `face_not_straight` | Head is turned or tilted | Face the camera directly |
+| `face_not_straight` | No face found, or head turned or tilted | Face the camera directly |
 | `eyes_not_open` | Eyes not fully open | Ensure eyes are open and visible |
 | `mouth_open` | Non-neutral expression | Keep mouth closed |
 | `eyeglasses_detected` | Eyeglasses visible | Remove glasses |
@@ -614,7 +614,7 @@ In its default (basic) mode, `/process-photo` runs an automated check on the pro
 | `jewelry_detected` | Jewelry visible | Remove jewelry |
 | `earrings_detected` | Earrings visible | Remove earrings |
 
-`face_not_straight` is also reported when no face is found. If the check itself cannot run, no issues are reported. With `validation_mode` set to `expert`, errors are descriptive messages from Expert Review instead of these codes. This check does not assess blur, lighting, exposure, framing or head size. To check a photo for those before you submit it unchanged, use [`POST /validate-photo`](#post-validate-photo).
+If the check itself cannot run, no issues are reported and the result looks like a pass. This check does not assess blur, lighting, exposure, framing or head size. To check a photo for those before you submit it unchanged, use [`POST /validate-photo`](#post-validate-photo).
 
 ## Privacy & Security
 
@@ -625,7 +625,7 @@ We take the privacy and security of your data seriously.
 - **Images**: Stored in private AWS S3 bucket with server-side encryption (AES-256)
 - **CDN Delivery**: Images served via CloudFront with custom domain (`images.snap2pass.com`)
 - **Retention**: Images automatically deleted after **30 days**
-- **Request records**: Request parameters and validation results are stored. No retention period is set for them, and they are not deleted automatically.
+- **Request records** (parameters, validation results): stored, not deleted automatically
 - **No Sharing**: Images are never shared with third parties or used for AI training
 
 ### Security Features
@@ -633,7 +633,7 @@ We take the privacy and security of your data seriously.
 - **Encryption**: All API requests use HTTPS with TLS 1.2+
 - **Authentication**: API key-based authentication with Bearer token
 - **Access Control**: CloudFront-only access to S3 bucket (no direct S3 URLs)
-- **Automatic Cleanup**: Stored images are deleted after 30 days
+- **Automatic Cleanup**: Images are deleted after 30 days
 - **Rate Limiting**: Protection against abuse (limits vary by account tier)
 
 ### Best Practices
