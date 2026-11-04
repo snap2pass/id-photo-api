@@ -181,7 +181,7 @@ Checks a photo you plan to submit **unchanged**. It does not crop, resize or cha
 
 #### What it checks
 
-- **Photo quality and subject** (expert review against ICAO 9303 rules, reported as P-codes): face presence, head pose and roll, eyes visible and open, eyebrows, hair and head coverings, expression and mouth, eyewear and reflections, lighting and shadows, exposure and skin tone, focus and motion blur, pixelation and noise, camera geometry, eye-level and gaze, body alignment, and (where the document forbids them) glasses and jewelry.
+- **Photo quality and subject** (expert review against ICAO 9303 rules, reported as P-codes): face presence, head pose and roll, eyes visible and open, eyebrows, hair and head coverings, expression and mouth, eyewear and reflections, lighting and shadows, exposure and skin tone, focus and motion blur, pixelation and noise, camera geometry, eye-level and gaze, biometric geometry viability, body alignment, and (where the document forbids them) glasses and jewelry.
 - **Measured geometry** (measured by code from face landmarks, reported in `measurements` and `geometry_checks`): `dimensions`, `aspect_ratio`, `head_height`, `eye_line`, `face_centre`, `roll`, `chin_in_frame`, and `face_not_detected` when no face is found. A measured failure fails the photo even if the appearance review passes. Pass/fail ranges exist today for `us-passport` only; for other documents the measurements are returned and each line has `passed: null` ("not assessed for this document"). `head_height` may also be `null` when the top of the head cannot be located reliably.
 
 #### What it does not check
@@ -663,7 +663,7 @@ Errors use the [standard error format](#error-response-format).
 | 400 | `INVALID_JSON`, `MISSING_REQUIRED_FIELD`, `INVALID_DOCUMENT_ID`, `INVALID_IMAGE_FORMAT`, `IMAGE_TOO_LARGE` | The request is malformed (see [Validation Errors](#validation-errors-400)) |
 | 401 | `MISSING_AUTHORIZATION`, `INVALID_API_KEY` | Missing or invalid API key |
 | 402 | `INSUFFICIENT_CREDITS` | Balance is 0 |
-| 500 | `INTERNAL_ERROR` | The check could not run. Retry, or contact support with the `request_id` |
+| 500 | `PROCESSING_FAILED`, `S3_UPLOAD_FAILED`, `INTERNAL_ERROR` | The check could not run. Retry, or contact support with the `request_id` |
 
 ## Error Handling
 
@@ -809,7 +809,7 @@ The `validation` object in successful responses contains:
 
 ### Common Validation Issues
 
-`/process-photo` runs a basic automated check on the processed photo. These are the only issues it reports in `validation.errors`:
+In its default (basic) mode, `/process-photo` runs an automated check on the processed photo. These are the only issues it reports in `validation.errors`:
 
 | Code | Description | Solution |
 |------|-------------|----------|

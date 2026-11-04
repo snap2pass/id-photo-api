@@ -459,8 +459,8 @@ Yes! The API still processes photos even if validation fails, and provides detai
   "validation": {
     "passed": false,
     "score": 45,
-    "warnings": ["Slightly blurred"],
-    "errors": ["Face not centered", "Eyes partially closed"],
+    "warnings": [],
+    "errors": ["face_not_straight", "eyes_not_open"],
     "summary": "Photo needs improvement"
   }
 }
