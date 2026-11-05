@@ -176,7 +176,7 @@ curl -X POST https://api.snap2pass.com/process-photo \
 Checks a photo that you will submit **unchanged**. It returns no image. The result is **advisory**: the issuing authority makes the final decision.
 
 - **Request:** Same as [`POST /process-photo`](#post-process-photo).
-- **Cost:** 1 credit per successful call. The API does not charge for errors.
+- **Cost:** 1 credit per successful call. The API does not charge for the errors that it returns (a `504` is not an API error response).
 - **Latency:** Typically 10-20 seconds. The gateway stops a call at 60 seconds (see `504`). Set your client timeout to 70 seconds.
 
 #### What it checks
