@@ -177,13 +177,13 @@ Checks a photo that you will submit **unchanged**. It returns no image. The resu
 
 - **Request:** Same as [`POST /process-photo`](#post-process-photo).
 - **Cost:** 1 credit per successful call. The API does not charge for errors.
-- **Latency:** Typically 10-20 seconds. Set your client timeout to 70 seconds.
+- **Latency:** Typically 10-20 seconds. The gateway stops a call at 60 seconds (see `504`). Set your client timeout to 70 seconds.
 
 #### What it checks
 
 - **Appearance:** An expert review checks the photo against ICAO 9303 (codes `P01` to `P17`). Glasses and jewelry fail only where the document forbids them.
 - **Geometry:** The API measures `dimensions`, `aspect_ratio`, `head_height`, `eye_line`, `face_centre`, `roll` and `chin_in_frame`. It reports `face_not_detected` when it finds no face. A measured failure fails the photo.
-- Pass/fail ranges exist today for `us-passport` only. For other documents, each `geometry_checks` entry has `passed: null` (not assessed for this document).
+- Only `us-passport` has pass/fail ranges today. For other documents, each `geometry_checks` entry has `passed: null` (not assessed for this document).
 - `head_height` is `null` when the API cannot find the top of the head.
 - The API does not check background colour or uniformity.
 
@@ -434,12 +434,12 @@ curl -X POST https://api.snap2pass.com/validate-photo \
 | `request_id` | string | UUID of this request |
 | `advisory` | boolean | Always `true` |
 | `passed` | boolean | `true` if no requirement failed |
-| `failed_requirements` | array | Per failed requirement: `code`, `requirement` |
+| `failed_requirements` | array | Per failed requirement: `code` (P-code or geometry code), `requirement` |
 | `reasons` | array | Per failure: `<requirement>: measured <value>, expected <expected>` |
 | `warnings` | array | Non-critical issues. They do not fail the photo |
 | `score` | number | Appearance review score, 0-100. It ignores geometry. A photo can score 97 and fail on geometry |
-| `summary` | string | Short text result |
-| `measurements` | object | Measured values. `null` when not measurable |
+| `summary` | string | Text summary of the result |
+| `measurements` | object | `width_px`, `height_px`, `eye_line_from_bottom_pct`, `face_centre_offset_pct` (positive = right), `roll_deg`, `chin_from_bottom_pct`, `head_top_from_top_pct`, `head_height_pct`, `head_top_method` (`segmentation`, `colour_scan` or `null`). A value is `null` when not measurable |
 | `geometry_checks` | array | Per check: `code`, `requirement`, `passed`, `value`, `expected` |
 | `checks_performed` | array | Codes of the checks that ran |
 | `credits_remaining` | number | Credits left after this call |
@@ -453,8 +453,8 @@ Errors use the [standard error format](#error-response-format).
 | 400 | `INVALID_JSON`, `MISSING_REQUIRED_FIELD`, `INVALID_DOCUMENT_ID`, `INVALID_IMAGE_FORMAT`, `IMAGE_TOO_LARGE` | The request is malformed. See [Validation Errors](#validation-errors-400) |
 | 401 | `MISSING_AUTHORIZATION`, `INVALID_API_KEY` | The API key is missing or not valid |
 | 402 | `INSUFFICIENT_CREDITS` | The balance is 0 |
-| 504 | None | The gateway timed out after 60 seconds. The check may have finished and been charged. Check `credits_remaining` on your next call, or contact support |
 | 500 | `PROCESSING_FAILED`, `S3_UPLOAD_FAILED`, `INTERNAL_ERROR` | The check could not run. Retry, or contact support with the `request_id` |
+| 504 | None | The gateway timed out after 60 seconds. The body is not in the standard format. The API charges after the check finishes, so a charge is possible but unlikely. Check `credits_remaining` on your next call, or contact support |
 
 ## Error Handling
 
