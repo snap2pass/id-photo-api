@@ -173,21 +173,19 @@ curl -X POST https://api.snap2pass.com/process-photo \
 
 #### Description
 
-Checks a photo that you will submit **unchanged**. It does not crop, resize, or change the background. It returns no image. The result is pass or fail. Each failed requirement has a reason. The result is **advisory**: the issuing authority makes the final decision.
+Checks a photo that you will submit **unchanged**. It returns no image. The result is **advisory**: the issuing authority makes the final decision.
 
-- **Auth and request body:** Same as [`POST /process-photo`](#post-process-photo). Use a Bearer API key. Send `photo` and `document_id`.
-- **Cost:** 1 credit per successful call. The API does not charge for errors. If your balance is 0, the call returns `402`.
+- **Request:** Same as [`POST /process-photo`](#post-process-photo).
+- **Cost:** 1 credit per successful call. The API does not charge for errors.
 - **Latency:** Typically 10-20 seconds. Set your client timeout to 70 seconds.
 
 #### What it checks
 
-- **Photo quality and subject:** Expert review against ICAO 9303 rules. Results use P-codes. Checks: face presence, head pose and roll, eyes visible and open, eyebrows, hair and head coverings, expression and mouth, eyewear and reflections, lighting and shadows, exposure and skin tone, focus and motion blur, pixelation and noise, camera geometry, eye-level and gaze, biometric geometry viability, body alignment, and (where the document forbids them) glasses and jewelry.
-- **Measured geometry:** The API measures these from face landmarks. Results are in `measurements` and `geometry_checks`: `dimensions`, `aspect_ratio`, `head_height`, `eye_line`, `face_centre`, `roll`, and `chin_in_frame`. `face_not_detected` is reported when the API finds no face. A measured failure fails the photo, even if the appearance review passes. Pass/fail ranges exist today for `us-passport` only. For other documents, measurements are returned and each `geometry_checks` entry has `passed: null` ("not assessed for this document"). `head_height` can also be `null` when the API cannot find the top of the head reliably.
-
-#### What it does not check
-
-- Background colour or uniformity.
-- Pass/fail geometry ranges for documents other than `us-passport`.
+- **Appearance:** An expert review checks the photo against ICAO 9303 (codes `P01` to `P17`). Glasses and jewelry fail only where the document forbids them.
+- **Geometry:** The API measures `dimensions`, `aspect_ratio`, `head_height`, `eye_line`, `face_centre`, `roll` and `chin_in_frame`. It reports `face_not_detected` when it finds no face. A measured failure fails the photo.
+- Pass/fail ranges exist today for `us-passport` only. For other documents, each `geometry_checks` entry has `passed: null` (not assessed for this document).
+- `head_height` is `null` when the API cannot find the top of the head.
+- The API does not check background colour or uniformity.
 
 #### Example Request
 
@@ -432,18 +430,18 @@ curl -X POST https://api.snap2pass.com/validate-photo \
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `success` | boolean | `true` when the check ran and returned a result |
-| `request_id` | string | Unique UUID for this request |
-| `advisory` | boolean | Always `true`. The result is guidance. The issuing authority decides |
+| `success` | boolean | `true` when the check ran |
+| `request_id` | string | UUID of this request |
+| `advisory` | boolean | Always `true` |
 | `passed` | boolean | `true` if no requirement failed |
-| `failed_requirements` | array | One entry for each failed requirement. `code` is a P-code or a geometry code. `requirement` states what is required |
-| `reasons` | array | One reason for each failure. The format is `<requirement>: measured <value>, expected <expected>`. If the top of the head touches the top edge of the photo, the `head_height` requirement reads "Top of head is cut off by the frame". Its reason reads "Top of head is cut off by the frame (hair touches the top edge)" |
+| `failed_requirements` | array | Per failed requirement: `code`, `requirement` |
+| `reasons` | array | Per failure: `<requirement>: measured <value>, expected <expected>` |
 | `warnings` | array | Non-critical issues. They do not fail the photo |
-| `score` | number | Quality score from 0-100 |
-| `summary` | string | Human-readable assessment |
-| `measurements` | object | Values that the API measures from the photo: `width_px`, `height_px`, `eye_line_from_bottom_pct`, `face_centre_offset_pct` (positive = right), `roll_deg`, `chin_from_bottom_pct`, `head_top_from_top_pct`, `head_height_pct`, `head_top_method` (`segmentation`, `colour_scan` or `null`). Values that the API cannot measure are `null` |
-| `geometry_checks` | array | One entry for each geometry check: `code`, `requirement`, `passed`, `value`, `expected`. `passed` is `true`, `false`, or `null` (not assessed for this document) |
-| `checks_performed` | array | Codes of the checks that the API ran |
+| `score` | number | Appearance review score, 0-100. It ignores geometry. A photo can score 97 and fail on geometry |
+| `summary` | string | Short text result |
+| `measurements` | object | Measured values. `null` when not measurable |
+| `geometry_checks` | array | Per check: `code`, `requirement`, `passed`, `value`, `expected` |
+| `checks_performed` | array | Codes of the checks that ran |
 | `credits_remaining` | number | Credits left after this call |
 
 #### Errors
@@ -455,6 +453,7 @@ Errors use the [standard error format](#error-response-format).
 | 400 | `INVALID_JSON`, `MISSING_REQUIRED_FIELD`, `INVALID_DOCUMENT_ID`, `INVALID_IMAGE_FORMAT`, `IMAGE_TOO_LARGE` | The request is malformed. See [Validation Errors](#validation-errors-400) |
 | 401 | `MISSING_AUTHORIZATION`, `INVALID_API_KEY` | The API key is missing or not valid |
 | 402 | `INSUFFICIENT_CREDITS` | The balance is 0 |
+| 504 | None | The gateway timed out after 60 seconds. The check may have finished and been charged. Check `credits_remaining` on your next call, or contact support |
 | 500 | `PROCESSING_FAILED`, `S3_UPLOAD_FAILED`, `INTERNAL_ERROR` | The check could not run. Retry, or contact support with the `request_id` |
 
 ## Error Handling
