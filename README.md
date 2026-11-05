@@ -43,7 +43,7 @@ Authorization: Bearer snap2pass_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 **Base URL:** `https://api.snap2pass.com`
 
-**Endpoints:** `POST /process-photo` (crop and return a processed photo) and `POST /validate-photo` (check a photo you will submit unchanged; no image is returned). See [`POST /validate-photo`](docs/api-docs.md#post-validate-photo).
+**Endpoints:** `POST /process-photo` crops a photo and returns the processed photo. `POST /validate-photo` checks a photo that you will submit unchanged. It returns no image. See [`POST /validate-photo`](docs/api-docs.md#post-validate-photo).
 
 **Region:** `us-east-1` (US East - N. Virginia)
 

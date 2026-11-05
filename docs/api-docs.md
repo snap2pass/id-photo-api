@@ -173,16 +173,16 @@ curl -X POST https://api.snap2pass.com/process-photo \
 
 #### Description
 
-Checks a photo you plan to submit **unchanged**. It does not crop, resize or change the background, and it returns no image. You get a pass/fail result with a reason for each failed requirement. The result is **advisory**: the issuing authority makes the final decision.
+Checks a photo that you will submit **unchanged**. It does not crop, resize, or change the background. It returns no image. The result is pass or fail. Each failed requirement has a reason. The result is **advisory**: the issuing authority makes the final decision.
 
-- **Auth and request body:** same as [`POST /process-photo`](#post-process-photo) (Bearer API key; `photo` and `document_id`).
-- **Cost:** 1 credit per successful call. Errors are not charged. If your balance is 0 the call returns `402`.
-- **Latency:** typically 10-20 seconds. Set your client timeout to 70 seconds.
+- **Auth and request body:** Same as [`POST /process-photo`](#post-process-photo). Use a Bearer API key. Send `photo` and `document_id`.
+- **Cost:** 1 credit per successful call. The API does not charge for errors. If your balance is 0, the call returns `402`.
+- **Latency:** Typically 10-20 seconds. Set your client timeout to 70 seconds.
 
 #### What it checks
 
-- **Photo quality and subject** (expert review against ICAO 9303 rules, reported as P-codes): face presence, head pose and roll, eyes visible and open, eyebrows, hair and head coverings, expression and mouth, eyewear and reflections, lighting and shadows, exposure and skin tone, focus and motion blur, pixelation and noise, camera geometry, eye-level and gaze, biometric geometry viability, body alignment, and (where the document forbids them) glasses and jewelry.
-- **Measured geometry** (measured by code from face landmarks, reported in `measurements` and `geometry_checks`): `dimensions`, `aspect_ratio`, `head_height`, `eye_line`, `face_centre`, `roll`, `chin_in_frame`, and `face_not_detected` when no face is found. A measured failure fails the photo even if the appearance review passes. Pass/fail ranges exist today for `us-passport` only; for other documents the measurements are returned and each line has `passed: null` ("not assessed for this document"). `head_height` may also be `null` when the top of the head cannot be located reliably.
+- **Photo quality and subject:** Expert review against ICAO 9303 rules. Results use P-codes. Checks: face presence, head pose and roll, eyes visible and open, eyebrows, hair and head coverings, expression and mouth, eyewear and reflections, lighting and shadows, exposure and skin tone, focus and motion blur, pixelation and noise, camera geometry, eye-level and gaze, biometric geometry viability, body alignment, and (where the document forbids them) glasses and jewelry.
+- **Measured geometry:** The API measures these from face landmarks. Results are in `measurements` and `geometry_checks`: `dimensions`, `aspect_ratio`, `head_height`, `eye_line`, `face_centre`, `roll`, and `chin_in_frame`. `face_not_detected` is reported when the API finds no face. A measured failure fails the photo, even if the appearance review passes. Pass/fail ranges exist today for `us-passport` only. For other documents, measurements are returned and each `geometry_checks` entry has `passed: null` ("not assessed for this document"). `head_height` can also be `null` when the API cannot find the top of the head reliably.
 
 #### What it does not check
 
@@ -309,7 +309,7 @@ curl -X POST https://api.snap2pass.com/validate-photo \
 }
 ```
 
-**Example: failing photo** (still `200 OK` and still charged: the check ran and gave a result)
+**Example: failing photo.** The response is still `200 OK` and still charged. The check ran and gave a result.
 
 ```json
 {
@@ -434,16 +434,16 @@ curl -X POST https://api.snap2pass.com/validate-photo \
 |-------|------|-------------|
 | `success` | boolean | `true` when the check ran and returned a result |
 | `request_id` | string | Unique UUID for this request |
-| `advisory` | boolean | Always `true`: the result is guidance, not a decision by the issuing authority |
+| `advisory` | boolean | Always `true`. The result is guidance. The issuing authority decides |
 | `passed` | boolean | `true` if no requirement failed |
-| `failed_requirements` | array | One entry per failed requirement: `code` (a P-code or a geometry code) and `requirement` (what is required) |
-| `reasons` | array | One reason per failure, in the form `<requirement>: measured <value>, expected <expected>`. If the top of the head touches the top edge of the photo, the `head_height` requirement reads "Top of head is cut off by the frame" and its reason is "Top of head is cut off by the frame (hair touches the top edge)" |
-| `warnings` | array | Non-critical issues that did not fail the photo |
+| `failed_requirements` | array | One entry for each failed requirement. `code` is a P-code or a geometry code. `requirement` states what is required |
+| `reasons` | array | One reason for each failure. The format is `<requirement>: measured <value>, expected <expected>`. If the top of the head touches the top edge of the photo, the `head_height` requirement reads "Top of head is cut off by the frame". Its reason reads "Top of head is cut off by the frame (hair touches the top edge)" |
+| `warnings` | array | Non-critical issues. They do not fail the photo |
 | `score` | number | Quality score from 0-100 |
 | `summary` | string | Human-readable assessment |
-| `measurements` | object | Values measured from the photo: `width_px`, `height_px`, `eye_line_from_bottom_pct`, `face_centre_offset_pct` (positive = right), `roll_deg`, `chin_from_bottom_pct`, `head_top_from_top_pct`, `head_height_pct`, `head_top_method` (`segmentation`, `colour_scan` or `null`). Values that could not be measured are `null` |
-| `geometry_checks` | array | One entry per geometry check: `code`, `requirement`, `passed` (`true`, `false`, or `null` = not assessed for this document), `value`, `expected` |
-| `checks_performed` | array | Codes of the checks actually assessed |
+| `measurements` | object | Values that the API measures from the photo: `width_px`, `height_px`, `eye_line_from_bottom_pct`, `face_centre_offset_pct` (positive = right), `roll_deg`, `chin_from_bottom_pct`, `head_top_from_top_pct`, `head_height_pct`, `head_top_method` (`segmentation`, `colour_scan` or `null`). Values that the API cannot measure are `null` |
+| `geometry_checks` | array | One entry for each geometry check: `code`, `requirement`, `passed`, `value`, `expected`. `passed` is `true`, `false`, or `null` (not assessed for this document) |
+| `checks_performed` | array | Codes of the checks that the API ran |
 | `credits_remaining` | number | Credits left after this call |
 
 #### Errors
@@ -452,9 +452,9 @@ Errors use the [standard error format](#error-response-format).
 
 | HTTP Status | Error Code | When |
 |-------------|-----------|------|
-| 400 | `INVALID_JSON`, `MISSING_REQUIRED_FIELD`, `INVALID_DOCUMENT_ID`, `INVALID_IMAGE_FORMAT`, `IMAGE_TOO_LARGE` | The request is malformed (see [Validation Errors](#validation-errors-400)) |
-| 401 | `MISSING_AUTHORIZATION`, `INVALID_API_KEY` | Missing or invalid API key |
-| 402 | `INSUFFICIENT_CREDITS` | Balance is 0 |
+| 400 | `INVALID_JSON`, `MISSING_REQUIRED_FIELD`, `INVALID_DOCUMENT_ID`, `INVALID_IMAGE_FORMAT`, `IMAGE_TOO_LARGE` | The request is malformed. See [Validation Errors](#validation-errors-400) |
+| 401 | `MISSING_AUTHORIZATION`, `INVALID_API_KEY` | The API key is missing or not valid |
+| 402 | `INSUFFICIENT_CREDITS` | The balance is 0 |
 | 500 | `PROCESSING_FAILED`, `S3_UPLOAD_FAILED`, `INTERNAL_ERROR` | The check could not run. Retry, or contact support with the `request_id` |
 
 ## Error Handling
