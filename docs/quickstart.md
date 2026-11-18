@@ -163,7 +163,7 @@ echo "✅ Downloaded processed image to passport_photo.jpg"
    - `us-passport` - US Passport
    - `us-visa` - US Visa
    - `ca-passport` - Canadian Passport
-   - `uk-passport` - UK Passport
+   - `gb-passport` - UK Passport
    - `eu-passport` - EU Passport
    - `in-passport` - Indian Passport
    - `jp-passport` - Japanese Passport
@@ -202,6 +202,8 @@ echo "✅ Downloaded processed image to passport_photo.jpg"
 
 ### Common Validation Issues
 
+To check a photo you will submit unchanged (no crop, no image returned), use `POST /validate-photo` instead; see the [API docs](./api-docs.md#post-validate-photo).
+
 **Warnings** (photo still usable):
 ```json
 {
@@ -216,23 +218,16 @@ echo "✅ Downloaded processed image to passport_photo.jpg"
 ```json
 {
   "errors": [
-    "Face not centered",
-    "Eyes not fully visible",
-    "Background too dark"
+    "face_not_straight",
+    "eyes_not_open",
+    "hat_detected"
   ]
 }
 ```
 
 ### Handling Validation Issues
 
-| Issue | Type | Solution |
-|-------|------|----------|
-| Glasses detected | Warning | Remove glasses if possible |
-| Uneven lighting | Warning | Use natural, diffused lighting |
-| Face not centered | Error | Center face in frame |
-| Eyes closed | Error | Ensure eyes are open and visible |
-| Mouth open | Error | Keep mouth closed |
-| No face detected | Error | Ensure clear, front-facing portrait |
+See the [issue codes and fixes](./api-docs.md#common-validation-issues).
 
 ## 🔄 Step 5: Download and Use Images
 

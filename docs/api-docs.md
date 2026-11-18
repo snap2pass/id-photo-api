@@ -21,7 +21,7 @@ To create an account and start using our API, please sign up at [snap2pass.com/b
 
 ### Overview
 
-This API processes and validates passport or visa photos based on specified document requirements. It accepts JSON requests with base64-encoded images, processes them, validates compliance, and returns CloudFront URLs for the processed images along with detailed validation results.
+This API processes and validates passport or visa photos based on specified document requirements. It accepts JSON requests with base64-encoded images, processes them, runs an automated photo check (see [Common Validation Issues](#common-validation-issues)), and returns CloudFront URLs for the processed images along with the validation results.
 
 **Note:** The maximum image size is **5MB** (base64-encoded).
 
@@ -54,7 +54,7 @@ Replace `snap2pass_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx` with your actual API key.
 
 #### Description
 
-This endpoint accepts a base64-encoded photo and processes it according to specified document requirements. It validates the photo for compliance and returns CloudFront URLs for both input and output images, along with detailed validation results.
+This endpoint accepts a base64-encoded photo and processes it according to specified document requirements. It runs an automated photo check and returns CloudFront URLs for both input and output images, along with the validation results. It does not certify that a photo will be accepted by an issuing authority.
 
 #### Request
 
@@ -90,7 +90,7 @@ curl -X POST https://api.snap2pass.com/process-photo \
   }'
 ```
 
-**Example: UK Passport Photo**
+**Example: UK Passport Photo (`gb-passport`)**
 
 ```bash
 curl -X POST https://api.snap2pass.com/process-photo \
@@ -98,7 +98,7 @@ curl -X POST https://api.snap2pass.com/process-photo \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
     "photo": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-    "document_id": "uk-passport"
+    "document_id": "gb-passport"
   }'
 ```
 
@@ -134,7 +134,7 @@ curl -X POST https://api.snap2pass.com/process-photo \
 | `request_id` | string | Unique UUID for this request |
 | `image_urls.input` | string | CloudFront URL for the uploaded input image |
 | `image_urls.output` | string | CloudFront URL for the processed output image |
-| `validation.passed` | boolean | Whether the photo passes all compliance checks |
+| `validation.passed` | boolean | Whether the automated photo check found no errors |
 | `validation.score` | number | Quality score from 0-100 |
 | `validation.warnings` | array | Non-critical issues that won't cause rejection |
 | `validation.errors` | array | Critical issues that may cause rejection |
@@ -168,6 +168,293 @@ curl -X POST https://api.snap2pass.com/process-photo \
   }
 }
 ```
+
+### POST /validate-photo
+
+#### Description
+
+Checks a photo that you will submit **unchanged**. It returns no image. The result is **advisory**: the issuing authority makes the final decision.
+
+- **Request:** Same as [`POST /process-photo`](#post-process-photo).
+- **Cost:** 1 credit per successful call. The API does not charge for the errors that it returns (a `504` is not an API error response).
+- **Latency:** Typically 10-20 seconds. The gateway stops a call at 60 seconds (see `504`). Set your client timeout to 70 seconds.
+
+#### What it checks
+
+- **Appearance:** An expert review checks the photo against ICAO 9303 (codes `P01` to `P17`). Glasses and jewelry fail only where the document forbids them.
+- **Geometry:** The API measures `dimensions`, `aspect_ratio`, `head_height`, `eye_line`, `face_centre`, `roll` and `chin_in_frame`. It reports `face_not_detected` when it finds no face. A measured failure fails the photo.
+- Only `us-passport` has pass/fail ranges today. For other documents, each `geometry_checks` entry has `passed: null` (not assessed for this document).
+- `head_height` is `null` when the API cannot find the top of the head.
+- The API does not check background colour or uniformity.
+
+#### Example Request
+
+```bash
+curl -X POST https://api.snap2pass.com/validate-photo \
+  --max-time 70 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "photo": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "document_id": "us-passport"
+  }'
+```
+
+#### Response
+
+**Status Code:** `200 OK`
+
+```json
+{
+  "success": true,
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "advisory": true,
+  "passed": true,
+  "failed_requirements": [],
+  "reasons": [],
+  "warnings": [],
+  "score": 94,
+  "summary": "Photo meets the checked requirements",
+  "checks_performed": [
+    "dimensions",
+    "aspect_ratio",
+    "head_height",
+    "eye_line",
+    "face_centre",
+    "roll",
+    "chin_in_frame",
+    "P01_face_presence",
+    "P02_head_pose_and_roll",
+    "P03_eyes_visible_and_open",
+    "P04_eyebrows_visible",
+    "P05_hair_and_head_coverings",
+    "P06_expression_and_mouth",
+    "P07_eyewear_and_reflections",
+    "P08_lighting_and_shadows",
+    "P09_exposure_contrast_skin_tone",
+    "P10_focus_and_motion_blur",
+    "P11_pixelation_upscale_and_noise",
+    "P12_camera_geometry_distance_focal_length",
+    "P13_camera_at_eye_level_and_gaze",
+    "P14_biometric_geometry_viability",
+    "P15_body_alignment_and_intrusions",
+    "P16_no_glasses",
+    "P17_no_jewelry"
+  ],
+  "measurements": {
+    "width_px": 1200,
+    "height_px": 1200,
+    "eye_line_from_bottom_pct": 60.3,
+    "face_centre_offset_pct": 0.8,
+    "roll_deg": 1.1,
+    "chin_from_bottom_pct": 18.9,
+    "head_top_from_top_pct": 18.7,
+    "head_height_pct": 62.4,
+    "head_top_method": "segmentation"
+  },
+  "geometry_checks": [
+    {
+      "code": "dimensions",
+      "requirement": "Photo size in pixels",
+      "passed": true,
+      "value": "1200x1200",
+      "expected": "600 to 1200 px per side"
+    },
+    {
+      "code": "aspect_ratio",
+      "requirement": "Photo shape (width / height)",
+      "passed": true,
+      "value": 1.0,
+      "expected": "1 +/- 0.01"
+    },
+    {
+      "code": "head_height",
+      "requirement": "Head height (chin to top of head) as % of photo height",
+      "passed": true,
+      "value": 62.4,
+      "expected": "50 to 68.75%"
+    },
+    {
+      "code": "eye_line",
+      "requirement": "Eye line height from the bottom as % of photo height",
+      "passed": true,
+      "value": 60.3,
+      "expected": "56.25 to 68.75%"
+    },
+    {
+      "code": "face_centre",
+      "requirement": "Face horizontally centred (offset, % of photo width)",
+      "passed": true,
+      "value": 0.8,
+      "expected": "within +/-5%"
+    },
+    {
+      "code": "roll",
+      "requirement": "Head not tilted (eye-line angle)",
+      "passed": true,
+      "value": 1.1,
+      "expected": "within +/-5 deg"
+    },
+    {
+      "code": "chin_in_frame",
+      "requirement": "Chin inside the photo",
+      "passed": true,
+      "value": 18.9,
+      "expected": "at least 0% from bottom"
+    }
+  ],
+  "credits_remaining": 39
+}
+```
+
+**Example: failing photo.** The response is still `200 OK` and still charged. The check ran and gave a result.
+
+```json
+{
+  "success": true,
+  "request_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "advisory": true,
+  "passed": false,
+  "failed_requirements": [
+    {
+      "code": "head_height",
+      "requirement": "Head height (chin to top of head) as % of photo height"
+    },
+    {
+      "code": "eye_line",
+      "requirement": "Eye line height from the bottom as % of photo height"
+    }
+  ],
+  "reasons": [
+    "Head height (chin to top of head) as % of photo height: measured 72.4, expected 50 to 68.75%",
+    "Eye line height from the bottom as % of photo height: measured 54.1, expected 56.25 to 68.75%"
+  ],
+  "warnings": [
+    "Slight shadow"
+  ],
+  "score": 58,
+  "summary": "Photo does not meet the checked requirements",
+  "checks_performed": [
+    "dimensions",
+    "aspect_ratio",
+    "head_height",
+    "eye_line",
+    "face_centre",
+    "roll",
+    "chin_in_frame",
+    "P01_face_presence",
+    "P02_head_pose_and_roll",
+    "P03_eyes_visible_and_open",
+    "P04_eyebrows_visible",
+    "P05_hair_and_head_coverings",
+    "P06_expression_and_mouth",
+    "P07_eyewear_and_reflections",
+    "P08_lighting_and_shadows",
+    "P09_exposure_contrast_skin_tone",
+    "P10_focus_and_motion_blur",
+    "P11_pixelation_upscale_and_noise",
+    "P12_camera_geometry_distance_focal_length",
+    "P13_camera_at_eye_level_and_gaze",
+    "P14_biometric_geometry_viability",
+    "P15_body_alignment_and_intrusions",
+    "P16_no_glasses",
+    "P17_no_jewelry"
+  ],
+  "measurements": {
+    "width_px": 1200,
+    "height_px": 1200,
+    "eye_line_from_bottom_pct": 54.1,
+    "face_centre_offset_pct": -1.2,
+    "roll_deg": 0.6,
+    "chin_from_bottom_pct": 15.3,
+    "head_top_from_top_pct": 12.3,
+    "head_height_pct": 72.4,
+    "head_top_method": "segmentation"
+  },
+  "geometry_checks": [
+    {
+      "code": "dimensions",
+      "requirement": "Photo size in pixels",
+      "passed": true,
+      "value": "1200x1200",
+      "expected": "600 to 1200 px per side"
+    },
+    {
+      "code": "aspect_ratio",
+      "requirement": "Photo shape (width / height)",
+      "passed": true,
+      "value": 1.0,
+      "expected": "1 +/- 0.01"
+    },
+    {
+      "code": "head_height",
+      "requirement": "Head height (chin to top of head) as % of photo height",
+      "passed": false,
+      "value": 72.4,
+      "expected": "50 to 68.75%"
+    },
+    {
+      "code": "eye_line",
+      "requirement": "Eye line height from the bottom as % of photo height",
+      "passed": false,
+      "value": 54.1,
+      "expected": "56.25 to 68.75%"
+    },
+    {
+      "code": "face_centre",
+      "requirement": "Face horizontally centred (offset, % of photo width)",
+      "passed": true,
+      "value": -1.2,
+      "expected": "within +/-5%"
+    },
+    {
+      "code": "roll",
+      "requirement": "Head not tilted (eye-line angle)",
+      "passed": true,
+      "value": 0.6,
+      "expected": "within +/-5 deg"
+    },
+    {
+      "code": "chin_in_frame",
+      "requirement": "Chin inside the photo",
+      "passed": true,
+      "value": 15.3,
+      "expected": "at least 0% from bottom"
+    }
+  ],
+  "credits_remaining": 38
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | boolean | `true` when the check ran |
+| `request_id` | string | UUID of this request |
+| `advisory` | boolean | Always `true` |
+| `passed` | boolean | `true` if no requirement failed |
+| `failed_requirements` | array | Per failed requirement: `code` (P-code or geometry code), `requirement` |
+| `reasons` | array | Per failure: `<requirement>: measured <value>, expected <expected>` |
+| `warnings` | array | Non-critical issues. They do not fail the photo |
+| `score` | number | Appearance review score, 0-100. It ignores geometry. A photo can score 97 and fail on geometry |
+| `summary` | string | Text summary of the result |
+| `measurements` | object | `width_px`, `height_px`, `eye_line_from_bottom_pct`, `face_centre_offset_pct` (positive = right), `roll_deg`, `chin_from_bottom_pct`, `head_top_from_top_pct`, `head_height_pct`, `head_top_method` (`segmentation`, `colour_scan` or `null`). A value is `null` when not measurable |
+| `geometry_checks` | array | Per check: `code`, `requirement`, `passed`, `value`, `expected` |
+| `checks_performed` | array | Codes of the checks that ran |
+| `credits_remaining` | number | Credits left after this call |
+
+#### Errors
+
+Errors use the [standard error format](#error-response-format).
+
+| HTTP Status | Error Code | When |
+|-------------|-----------|------|
+| 400 | `INVALID_JSON`, `MISSING_REQUIRED_FIELD`, `INVALID_DOCUMENT_ID`, `INVALID_IMAGE_FORMAT`, `IMAGE_TOO_LARGE` | The request is malformed. See [Validation Errors](#validation-errors-400) |
+| 401 | `MISSING_AUTHORIZATION`, `INVALID_API_KEY` | The API key is missing or not valid |
+| 402 | `INSUFFICIENT_CREDITS` | The balance is 0 |
+| 500 | `PROCESSING_FAILED`, `S3_UPLOAD_FAILED`, `INTERNAL_ERROR` | The check could not run. Retry, or contact support with the `request_id` |
+| 504 | None | The gateway timed out after 60 seconds. The body is not in the standard format. The API charges after the check finishes, so a charge is possible but unlikely. Check `credits_remaining` on your next call, or contact support |
 
 ## Error Handling
 
@@ -239,7 +526,7 @@ All API errors follow a standardized format for easy parsing and handling.
     "message": "Invalid document_id: 'mars-passport'",
     "details": {
       "provided": "mars-passport",
-      "valid_options": ["us-passport", "us-visa", "ca-passport", "uk-passport", "eu-passport", "in-passport", "jp-passport", "cn-passport", "au-passport"]
+      "valid_options": ["us-passport", "us-visa", "ca-passport", "gb-passport", "eu-passport", "in-passport", "jp-passport", "cn-passport", "au-passport"]
     }
   }
 }
@@ -301,7 +588,7 @@ The `validation` object in successful responses contains:
 
 ### Understanding Validation Results
 
-- **`passed`**: `true` if photo meets minimum requirements, `false` if critical issues exist
+- **`passed`**: `true` if the automated photo check found no errors, `false` otherwise
 - **`score`**: 0-100 quality score (higher is better)
   - 90-100: Excellent quality
   - 75-89: Good quality (acceptable)
@@ -313,16 +600,20 @@ The `validation` object in successful responses contains:
 
 ### Common Validation Issues
 
-| Issue | Type | Description | Solution |
-|-------|------|-------------|----------|
-| Poor lighting | Warning | Uneven or harsh lighting | Use natural, diffused lighting |
-| Glasses detected | Warning | Eyeglasses visible | Remove glasses if possible (requirements vary by country) |
-| Slight blur | Warning | Minor focus issues | Use better camera or focus |
-| Face not centered | Error | Face not properly centered | Center face in frame |
-| Eyes closed | Error | Eyes not fully visible | Ensure eyes are open and visible |
-| Mouth open | Error | Non-neutral expression | Keep mouth closed |
-| Multiple faces | Error | More than one person detected | Photo must contain only one person |
-| No face detected | Error | Face detection failed | Ensure clear, front-facing portrait |
+In its default (basic) mode, `/process-photo` runs an automated check on the processed photo. These are the only issues it reports in `validation.errors`:
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| `face_not_straight` | No face found, or head turned or tilted | Face the camera directly |
+| `eyes_not_open` | Eyes not fully open | Ensure eyes are open and visible |
+| `mouth_open` | Non-neutral expression | Keep mouth closed |
+| `eyeglasses_detected` | Eyeglasses visible | Remove glasses |
+| `sunglasses_detected` | Sunglasses visible | Remove sunglasses |
+| `hat_detected` | Hat or head covering visible | Remove it, unless worn for religious reasons |
+| `jewelry_detected` | Jewelry visible | Remove jewelry |
+| `earrings_detected` | Earrings visible | Remove earrings |
+
+If the check itself cannot run, no issues are reported and the result looks like a pass. This check does not assess blur, lighting, exposure, framing or head size. To check a photo for those before you submit it unchanged, use [`POST /validate-photo`](#post-validate-photo).
 
 ## Privacy & Security
 
@@ -333,7 +624,7 @@ We take the privacy and security of your data seriously.
 - **Images**: Stored in private AWS S3 bucket with server-side encryption (AES-256)
 - **CDN Delivery**: Images served via CloudFront with custom domain (`images.snap2pass.com`)
 - **Retention**: Images automatically deleted after **30 days**
-- **Metadata**: Request parameters and validation results stored for analytics
+- **Request records** (parameters, validation results): stored, not deleted automatically
 - **No Sharing**: Images are never shared with third parties or used for AI training
 
 ### Security Features
@@ -341,7 +632,7 @@ We take the privacy and security of your data seriously.
 - **Encryption**: All API requests use HTTPS with TLS 1.2+
 - **Authentication**: API key-based authentication with Bearer token
 - **Access Control**: CloudFront-only access to S3 bucket (no direct S3 URLs)
-- **Automatic Cleanup**: Scheduled deletion of images after 30 days
+- **Automatic Cleanup**: Images are deleted after 30 days
 - **Rate Limiting**: Protection against abuse (limits vary by account tier)
 
 ### Best Practices
@@ -421,7 +712,7 @@ Below is the complete list of supported document types with their specifications
 | `us-passport` | US Passport | 2×2 inches | 300 |
 | `us-visa` | US Visa | 2×2 inches | 300 |
 | `ca-passport` | Canadian Passport | 50×70 mm | 300 |
-| `uk-passport` | UK Passport | 35×45 mm | 300 |
+| `gb-passport` | UK Passport | 35×45 mm | 300 |
 | `eu-passport` | EU Passport | 35×45 mm | 300 |
 | `in-passport` | Indian Passport | 35×35 mm | 300 |
 | `jp-passport` | Japanese Passport | 35×45 mm | 300 |
@@ -510,11 +801,15 @@ echo "✅ Photo downloaded to processed_photo.jpg"
 
 ## Changelog
 
+### Unreleased
+- Added `POST /validate-photo`
+- Corrected the example document id: the UK passport id is `gb-passport`
+
 ### v2.0.0 (Current)
 - ✅ JSON-based API (replacing multipart form data)
 - ✅ CloudFront CDN delivery with custom domain
 - ✅ Enhanced validation with detailed scoring system
-- ✅ Standardized error codes (14 types)
+- ✅ Standardized error codes
 - ✅ 5MB image size limit
 - ✅ 30-day image retention
 - ✅ Support for 9 document types

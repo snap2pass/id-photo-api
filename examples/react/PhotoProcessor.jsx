@@ -25,7 +25,7 @@ const PhotoProcessor = () => {
     { id: 'us-passport', label: 'US Passport' },
     { id: 'us-visa', label: 'US Visa' },
     { id: 'ca-passport', label: 'Canadian Passport' },
-    { id: 'uk-passport', label: 'UK Passport' },
+    { id: 'gb-passport', label: 'UK Passport' },
     { id: 'eu-passport', label: 'EU Passport' },
     { id: 'in-passport', label: 'Indian Passport' },
     { id: 'jp-passport', label: 'Japanese Passport' },
@@ -294,7 +294,7 @@ const PhotoProcessor = () => {
             {(!result.validation.warnings || result.validation.warnings.length === 0) &&
              (!result.validation.errors || result.validation.errors.length === 0) && (
               <div className="success-message">
-                <p>🎉 No validation issues! Your photo meets all requirements.</p>
+                <p>🎉 No validation issues found.</p>
               </div>
             )}
 

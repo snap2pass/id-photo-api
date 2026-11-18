@@ -134,7 +134,7 @@ const response2 = await api.processPhoto(photoFile, 'US', 'passport', requestId)
 - ✅ Background removal
 - ✅ Face detection and alignment
 - ✅ Quality enhancement
-- ✅ Compliance validation
+- ✅ Automated photo check
 - ✅ Base64 image handling
 - ✅ Error recovery
 - ✅ Batch processing
@@ -189,7 +189,7 @@ npm start
 ### Travel Agency
 - Process client photos for visa applications
 - Batch process multiple applications
-- Validate photo compliance automatically
+- Run an automated photo check on client photos
 
 ### Photo Studio
 - Offer passport photo services
@@ -198,7 +198,7 @@ npm start
 
 ### Government Services
 - Streamline document processing
-- Automated compliance checking
+- Automated photo checking
 - Reduce manual review time
 
 ### Mobile Apps
@@ -233,8 +233,8 @@ if (!allowedTypes.includes(file.type)) {
 ### Validation Errors
 ```javascript
 // Handle validation errors
-if (result.validation_errors.length > 0) {
-  result.validation_errors.forEach(error => {
+if (result.validation.errors.length > 0) {
+  result.validation.errors.forEach(error => {
     console.log(`Validation error: ${error}`);
   });
 }

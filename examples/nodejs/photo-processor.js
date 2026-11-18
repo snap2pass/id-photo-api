@@ -28,7 +28,7 @@ class Snap2PassAPI {
   /**
    * Process a photo using the Snap2Pass API
    * @param {string} photoPath - Path to the input photo file
-   * @param {string} documentId - Document type identifier (e.g., 'us-passport', 'uk-passport')
+   * @param {string} documentId - Document type identifier (e.g., 'us-passport', 'gb-passport')
    * @returns {Promise<Object>} API response
    */
   async processPhoto(photoPath, documentId) {
@@ -248,7 +248,7 @@ async function main() {
     console.log('🇬🇧 Example 2: Processing UK passport photo');
     console.log('='.repeat(70));
     
-    const response2 = await api.processPhoto(photoPath, 'uk-passport');
+    const response2 = await api.processPhoto(photoPath, 'gb-passport');
 
     console.log('✅ Success!');
     console.log(`📝 Request ID: ${response2.request_id}`);
@@ -279,7 +279,7 @@ async function main() {
 
     const photos = [
       { path: 'photo1.jpg', documentId: 'us-passport' },
-      { path: 'photo2.jpg', documentId: 'uk-passport' },
+      { path: 'photo2.jpg', documentId: 'gb-passport' },
       { path: 'photo3.jpg', documentId: 'eu-passport' },
     ];
 
